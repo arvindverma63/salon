@@ -252,12 +252,49 @@ class CustomerController extends Controller
     {
         $query = User::where('role', 'customer');
 
-        // Apply email filter directly on users table
+        // Apply email filter
         if ($request->has('email')) {
             $query->where('email', 'like', '%' . $request->input('email') . '%');
         }
 
-        // Get initial paginated users
+        // Get matching user IDs from user_profiles for profile fields
+        $profileQuery = DB::table('user_profiles');
+
+        if ($request->has('first_name')) {
+            $profileQuery->where('firstName', 'like', '%' . $request->input('first_name') . '%');
+        }
+
+        if ($request->has('last_name')) {
+            $profileQuery->where('lastName', 'like', '%' . $request->input('last_name') . '%');
+        }
+
+        if ($request->has('phone_number')) {
+            $profileQuery->where('phone_number', 'like', '%' . $request->input('phone_number') . '%');
+        }
+
+        // If any profile filters are applied, restrict users to matching profile user_ids
+        if ($request->hasAny(['firstName', 'lastName', 'phone_number'])) {
+            $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
+            if (empty($matchingUserIds)) {
+                // If no profiles match, return empty result
+                return response()->json([
+                    'data' => [],
+                    'pagination' => [
+                        'total' => 0,
+                        'per_page' => $request->input('per_page', 15),
+                        'current_page' => $request->input('page', 1),
+                        'last_page' => 0,
+                        'from' => null,
+                        'to' => null,
+                        'next_page_url' => null,
+                        'prev_page_url' => null
+                    ]
+                ]);
+            }
+            $query->whereIn('id', $matchingUserIds);
+        }
+
+        // Pagination
         $perPage = $request->input('per_page', 15);
         $users = $query->paginate($perPage);
 
@@ -265,26 +302,6 @@ class CustomerController extends Controller
 
         foreach ($users as $user) {
             $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
-
-            // Apply profile filters
-            if ($request->has('first_name') && $profile) {
-                if (stripos($profile->first_name ?? '', $request->input('first_name')) === false) {
-                    continue;
-                }
-            }
-
-            if ($request->has('last_name') && $profile) {
-                if (stripos($profile->last_name ?? '', $request->input('last_name')) === false) {
-                    continue;
-                }
-            }
-
-            if ($request->has('phone_number') && $profile) {
-                if (stripos($profile->phone_number ?? '', $request->input('phone_number')) === false) {
-                    continue;
-                }
-            }
-
             $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
                 ->where('type', 'used')
                 ->sum('quantity');
