@@ -58,11 +58,11 @@ Route::post('/service-use-report',[ServiceTransactionController::class,'serviceU
 Route::post('getUserd',[AuthController::class,'getUserd']);
 Route::post('/customerDayUsage',[ServiceTransactionController::class,'customerDayUsage']);
 
+Route::get('getUser',[AuthController::class,'getUser']);
 Route::group(['middleware' => 'auth:api'], function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('me', [AuthController::class, 'me']);
     Route::post('refresh', [AuthController::class, 'refresh']);
-    Route::get('getUser',[AuthController::class,'getUser']);
     Route::get('/totalSpend/{id}',[ServiceTransactionController::class,'totalSpend']);
     // Route::get('stats',[UserProfileController::class,'stat']);
     // User Profile routes
