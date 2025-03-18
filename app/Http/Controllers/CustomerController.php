@@ -222,109 +222,114 @@ class CustomerController extends Controller
      * )
      */
 
-    public function searchCustomers(Request $request)
-    {
-        // Initialize base query for customers
-        $query = User::where('role', 'customer')->orderBy('id');
+     public function searchCustomers(Request $request)
+     {
+         // Initialize base query for customers
+         $query = User::where('role', 'customer')->orderBy('id');
 
-        // Apply email filter if provided
-        if ($request->has('email')) {
-            $query->where('email', 'like', '%' . $request->input('email') . '%');
-        }
+         // Apply email filter if provided
+         if ($request->has('email')) {
+             $query->where('email', 'like', '%' . $request->input('email') . '%');
+         }
 
-        // Set up profile query for filtering by profile fields
-        $profileQuery = DB::table('user_profiles');
-        $hasValidFilter = false;
+         // Set up profile query for filtering by profile fields
+         $profileQuery = DB::table('user_profiles');
+         $hasValidFilter = false;
 
-        // Apply location filter with optional key search
-        if ($request->has('locationId')) {
-            if ($request->input('locationId') != null && $request->input('locationId') != '0') {
-                $hasValidFilter = true;
-                $key = $request->has('key') && $request->input('key') !== '' ? '%' . $request->input('key') . '%' : '%';
-                $profileQuery->where('preferred_location', $request->input('locationId'))
-                    ->where(function ($q) use ($key) {
-                        $q->where('firstName', 'like', $key)
-                            ->orWhere('lastName', 'like', $key)
-                            ->orWhere('phone_number', 'like', $key);
-                    });
-            }
-        } else {
-            // Apply single key search across multiple profile fields only if key is provided and not empty
-            if ($request->has('key') && $request->input('key') !== '') {
-                $hasValidFilter = true;
-                $key = '%' . $request->input('key') . '%';
-                $profileQuery->where(function ($q) use ($key) {
-                    $q->where('firstName', 'like', $key)
-                        ->orWhere('lastName', 'like', $key)
-                        ->orWhere('phone_number', 'like', $key);
-                });
-            }
-        }
+         // Check if key is empty or not provided
+         if (!$request->has('key') || $request->input('key') === '') {
+             return response()->json(['data' => []]);
+         }
 
-        // If no valid filters are applied, return empty result
-        if (!$hasValidFilter && !$request->has('email')) {
-            return response()->json(['data' => []]);
-        }
+         // Apply location filter with key search
+         if ($request->has('locationId')) {
+             if ($request->input('locationId') != null && $request->input('locationId') != '0') {
+                 $hasValidFilter = true;
+                 $key = '%' . $request->input('key') . '%';
+                 $profileQuery->where('preferred_location', $request->input('locationId'))
+                     ->where(function ($q) use ($key) {
+                         $q->where('firstName', 'like', $key)
+                             ->orWhere('lastName', 'like', $key)
+                             ->orWhere('phone_number', 'like', $key);
+                     });
+             }
+         } else {
+             // Apply single key search across multiple profile fields
+             if ($request->has('key') && $request->input('key') !== '') {
+                 $hasValidFilter = true;
+                 $key = '%' . $request->input('key') . '%';
+                 $profileQuery->where(function ($q) use ($key) {
+                     $q->where('firstName', 'like', $key)
+                         ->orWhere('lastName', 'like', $key)
+                         ->orWhere('phone_number', 'like', $key);
+                 });
+             }
+         }
 
-        // Apply profile filters to main query if any exist
-        if ($hasValidFilter) {
-            $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
-            if (empty($matchingUserIds)) {
-                return response()->json(['data' => []]);
-            }
-            $query->whereIn('id', $matchingUserIds);
-        }
+         // If no valid filters are applied (besides email), return empty result
+         if (!$hasValidFilter && !$request->has('email')) {
+             return response()->json(['data' => []]);
+         }
 
-        // Execute query and get results
-        $users = $query->get();
-        $usersWithProfiles = [];
+         // Apply profile filters to main query if any exist
+         if ($hasValidFilter) {
+             $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
+             if (empty($matchingUserIds)) {
+                 return response()->json(['data' => []]);
+             }
+             $query->whereIn('id', $matchingUserIds);
+         }
 
-        // Process each user and calculate totals
-        foreach ($users as $user) {
-            $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
+         // Execute query and get results
+         $users = $query->get();
+         $usersWithProfiles = [];
 
-            // Calculate total used minutes from service transactions
-            $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
-                ->where('type', 'used')
-                ->sum('quantity');
+         // Process each user and calculate totals
+         foreach ($users as $user) {
+             $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
 
-            // Calculate total service purchase price
-            $totalServicePurchasedPrice = ServiceTransaction::where('user_id', $user->id)
-                ->where('type', 'purchased')
-                ->get()
-                ->sum(function ($transaction) {
-                    $service = Service::find($transaction->service_id);
-                    return $service ? $service->price : 0;
-                });
+             // Calculate total used minutes from service transactions
+             $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
+                 ->where('type', 'used')
+                 ->sum('quantity');
 
-            // Calculate total product purchase price
-            $totalProductPurchasedPrice = ProductTransaction::where('user_id', $user->id)
-                ->get()
-                ->sum(function ($transaction) {
-                    $product = Product::find($transaction->product_id);
-                    return $product ? $transaction->quantity * $product->price : 0;
-                });
+             // Calculate total service purchase price
+             $totalServicePurchasedPrice = ServiceTransaction::where('user_id', $user->id)
+                 ->where('type', 'purchased')
+                 ->get()
+                 ->sum(function ($transaction) {
+                     $service = Service::find($transaction->service_id);
+                     return $service ? $service->price : 0;
+                 });
 
-            $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
+             // Calculate total product purchase price
+             $totalProductPurchasedPrice = ProductTransaction::where('user_id', $user->id)
+                 ->get()
+                 ->sum(function ($transaction) {
+                     $product = Product::find($transaction->product_id);
+                     return $product ? $transaction->quantity * $product->price : 0;
+                 });
 
-            // Apply minimum total filter if specified
-            if ($request->has('min_total') && $totalPrice < $request->input('min_total')) {
-                continue;
-            }
+             $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
 
-            // Build result array for each user
-            $usersWithProfiles[] = [
-                'user' => $user,
-                'profile' => $profile,
-                'total_used_minutes' => $totalUsedMinutes,
-                'total_service_purchased_price' => $totalServicePurchasedPrice,
-                'total_product_purchased_price' => $totalProductPurchasedPrice,
-                'total_price' => $totalPrice
-            ];
-        }
+             // Apply minimum total filter if specified
+             if ($request->has('min_total') && $totalPrice < $request->input('min_total')) {
+                 continue;
+             }
 
-        return response()->json(['data' => $usersWithProfiles]);
-    }
+             // Build result array for each user
+             $usersWithProfiles[] = [
+                 'user' => $user,
+                 'profile' => $profile,
+                 'total_used_minutes' => $totalUsedMinutes,
+                 'total_service_purchased_price' => $totalServicePurchasedPrice,
+                 'total_product_purchased_price' => $totalProductPurchasedPrice,
+                 'total_price' => $totalPrice
+             ];
+         }
+
+         return response()->json(['data' => $usersWithProfiles]);
+     }
 
     /**
      * Get customers with transaction data within a date range using page-based pagination
