@@ -546,7 +546,7 @@ class AuthController extends Controller
         $limit = $request->input('per_page', 15);
         $offset = $request->input('page', 0);
 
-        $query = User::whereNot('role', 'customer');
+        $query = User::whereNot('role', 'customer')->orderBy('id');
         $total = $query->count();
         $users = $query->offset($offset)->take($limit)->get();
 
