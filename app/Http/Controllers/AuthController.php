@@ -434,20 +434,23 @@ class AuthController extends Controller
             ->pluck('preferred_location', 'user_id')
             ->toArray();
 
-        // Base user query with early filtering
-        $usersQuery = User::where('role', 'customer')
-            ->select('id', 'created_at');
+        // Fetch all services and products in bulk
+        $services = DB::table('services')->pluck('price', 'id')->toArray();
+        $products = DB::table('products')->pluck('price', 'id')->toArray();
 
-        $users = $usersQuery->get();
+        // Base user query
+        $users = User::where('role', 'customer')
+            ->select('id', 'created_at')
+            ->get();
 
-        // Fetch all transactions in bulk within date range
+        // Fetch transactions in bulk within date range
         $serviceTransactions = ServiceTransaction::whereBetween('created_at', [$startDate, $endDate])
-            ->with('service:id,price') // Eager load service prices
+            ->select('user_id', 'service_id')
             ->get()
             ->groupBy('user_id');
 
         $productTransactions = ProductTransaction::whereBetween('created_at', [$startDate, $endDate])
-            ->with('product:id,price') // Eager load product prices
+            ->select('user_id', 'product_id', 'quantity')
             ->get()
             ->groupBy('user_id');
 
@@ -492,7 +495,7 @@ class AuthController extends Controller
             // Process service transactions
             if (isset($serviceTransactions[$userId])) {
                 foreach ($serviceTransactions[$userId] as $transaction) {
-                    $serviceSpent = $transaction->service->price ?? 0;
+                    $serviceSpent = $services[$transaction->service_id] ?? 0;
                     $totalSpent += $serviceSpent;
                     $transactionCount++;
                     Log::info('User ID: ' . $userId . ' Service ID: ' . $transaction->service_id . ' Spent: ' . $serviceSpent);
@@ -502,7 +505,7 @@ class AuthController extends Controller
             // Process product transactions
             if (isset($productTransactions[$userId])) {
                 foreach ($productTransactions[$userId] as $transaction) {
-                    $productSpent = ($transaction->product->price ?? 0) * $transaction->quantity;
+                    $productSpent = ($products[$transaction->product_id] ?? 0) * $transaction->quantity;
                     $totalSpent += $productSpent;
                     $transactionCount++;
                     Log::info('User ID: ' . $userId . ' Product ID: ' . $transaction->product_id . ' Spent: ' . $productSpent);
