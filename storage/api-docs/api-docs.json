@@ -497,14 +497,17 @@
                                                     },
                                                     "profile": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
                                                             "user_id": {
                                                                 "type": "integer"
                                                             },
-                                                            "first_name": {
+                                                            "firstName": {
                                                                 "type": "string",
                                                                 "nullable": true
                                                             },
-                                                            "last_name": {
+                                                            "lastName": {
                                                                 "type": "string",
                                                                 "nullable": true
                                                             },
@@ -626,7 +629,7 @@
                 "operationId": "f18fd66527e9da87aa9c81daad8b5ab7",
                 "parameters": [
                     {
-                        "name": "first_name",
+                        "name": "firstName",
                         "in": "query",
                         "description": "Search by customer's first name",
                         "required": false,
@@ -635,7 +638,7 @@
                         }
                     },
                     {
-                        "name": "last_name",
+                        "name": "lastName",
                         "in": "query",
                         "description": "Search by customer's last name",
                         "required": false,
@@ -722,14 +725,17 @@
                                                     },
                                                     "profile": {
                                                         "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
                                                             "user_id": {
                                                                 "type": "integer"
                                                             },
-                                                            "first_name": {
+                                                            "firstName": {
                                                                 "type": "string",
                                                                 "nullable": true
                                                             },
-                                                            "last_name": {
+                                                            "lastName": {
                                                                 "type": "string",
                                                                 "nullable": true
                                                             },

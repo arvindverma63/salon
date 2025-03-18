@@ -46,9 +46,10 @@ class CustomerController extends Controller
      *                         @OA\Property(property="role", type="string", example="customer")
      *                     ),
      *                     @OA\Property(property="profile", type="object",
+     *                         @OA\Property(property="id", type="integer"),
      *                         @OA\Property(property="user_id", type="integer"),
-     *                         @OA\Property(property="first_name", type="string", nullable=true),
-     *                         @OA\Property(property="last_name", type="string", nullable=true),
+     *                         @OA\Property(property="firstName", type="string", nullable=true),
+     *                         @OA\Property(property="lastName", type="string", nullable=true),
      *                         @OA\Property(property="phone_number", type="string", nullable=true),
      *                         additionalProperties=true
      *                     ),
@@ -147,14 +148,14 @@ class CustomerController extends Controller
      *     summary="Search customers with filtering options",
      *     tags={"Customers"},
      *     @OA\Parameter(
-     *         name="first_name",
+     *         name="firstName",
      *         in="query",
      *         description="Search by customer's first name",
      *         required=false,
      *         @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
-     *         name="last_name",
+     *         name="lastName",
      *         in="query",
      *         description="Search by customer's last name",
      *         required=false,
@@ -208,9 +209,10 @@ class CustomerController extends Controller
      *                         @OA\Property(property="role", type="string", example="customer")
      *                     ),
      *                     @OA\Property(property="profile", type="object",
+     *                         @OA\Property(property="id", type="integer"),
      *                         @OA\Property(property="user_id", type="integer"),
-     *                         @OA\Property(property="first_name", type="string", nullable=true),
-     *                         @OA\Property(property="last_name", type="string", nullable=true),
+     *                         @OA\Property(property="firstName", type="string", nullable=true),
+     *                         @OA\Property(property="lastName", type="string", nullable=true),
      *                         @OA\Property(property="phone_number", type="string", nullable=true),
      *                         additionalProperties=true
      *                     ),
@@ -260,12 +262,12 @@ class CustomerController extends Controller
         // Get matching user IDs from user_profiles for profile fields
         $profileQuery = DB::table('user_profiles');
 
-        if ($request->has('first_name')) {
-            $profileQuery->where('firstName', 'like', '%' . $request->input('first_name') . '%');
+        if ($request->has('firstName')) {
+            $profileQuery->where('firstName', 'like', '%' . $request->input('firstName') . '%');
         }
 
-        if ($request->has('last_name')) {
-            $profileQuery->where('lastName', 'like', '%' . $request->input('last_name') . '%');
+        if ($request->has('lastName')) {
+            $profileQuery->where('lastName', 'like', '%' . $request->input('lastName') . '%');
         }
 
         if ($request->has('phone_number')) {
