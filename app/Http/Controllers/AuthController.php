@@ -350,11 +350,11 @@ class AuthController extends Controller
 
 
     /**
-     * Get customer transaction data by location and week with offset pagination
+     * Get customer transaction data by location and week with page-based pagination
      *
      * @OA\Post(
      *     path="/api/getUserd",
-     *     summary="Get customer transaction data by location and registration week with offset pagination",
+     *     summary="Get customer transaction data by location and registration week with page-based pagination",
      *     tags={"Customers"},
      *     @OA\RequestBody(
      *         required=false,
@@ -362,8 +362,8 @@ class AuthController extends Controller
      *             @OA\Property(property="start_date", type="string", format="date", example="2024-01-01", description="Start date for transaction filtering (YYYY-MM-DD)"),
      *             @OA\Property(property="end_date", type="string", format="date", example="2024-01-07", description="End date for transaction filtering (YYYY-MM-DD)"),
      *             @OA\Property(property="location_id", type="integer", example=1, description="Filter by specific location ID"),
-     *             @OA\Property(property="offset", type="integer", example=0, default=0, description="Number of items to skip"),
-     *             @OA\Property(property="limit", type="integer", example=15, default=15, description="Number of items to return")
+     *             @OA\Property(property="page", type="integer", example=1, default=1, description="Page number"),
+     *             @OA\Property(property="per_page", type="integer", example=15, default=15, description="Number of items per page")
      *         )
      *     ),
      *     @OA\Response(
@@ -386,9 +386,11 @@ class AuthController extends Controller
      *             ),
      *             @OA\Property(property="pagination", type="object",
      *                 @OA\Property(property="total", type="integer", example=50),
-     *                 @OA\Property(property="limit", type="integer", example=15),
-     *                 @OA\Property(property="offset", type="integer", example=0),
-     *                 @OA\Property(property="has_more", type="boolean", example=true)
+     *                 @OA\Property(property="per_page", type="integer", example=15),
+     *                 @OA\Property(property="current_page", type="integer", example=1),
+     *                 @OA\Property(property="last_page", type="integer", example=4),
+     *                 @OA\Property(property="from", type="integer", example=1),
+     *                 @OA\Property(property="to", type="integer", example=15)
      *             )
      *         )
      *     ),
@@ -420,8 +422,9 @@ class AuthController extends Controller
         }
 
         $locationIdFilter = $request->input('location_id');
-        $limit = $request->input('limit', 15);
-        $offset = $request->input('offset', 0);
+        $perPage = $request->input('per_page', 15);
+        $page = $request->input('page', 1);
+        $offset = ($page - 1) * $perPage; // Calculate offset based on page
 
         // Fetch all locations once
         $locations = DB::table('locations')->pluck('name', 'id')->toArray();
@@ -528,17 +531,22 @@ class AuthController extends Controller
             }
         }
 
-        // Apply offset and limit
+        // Apply page-based pagination
         $total = count($responseData);
-        $paginatedData = array_slice($responseData, $offset, $limit);
+        $lastPage = ceil($total / $perPage);
+        $paginatedData = array_slice($responseData, $offset, $perPage);
+        $from = $offset + 1;
+        $to = $offset + count($paginatedData);
 
         return response()->json([
             'data' => $paginatedData,
             'pagination' => [
                 'total' => $total,
-                'limit' => $limit,
-                'offset' => $offset,
-                'has_more' => ($offset + count($paginatedData)) < $total
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'last_page' => $lastPage,
+                'from' => $from,
+                'to' => $to
             ]
         ]);
     }

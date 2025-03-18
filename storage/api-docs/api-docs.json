@@ -315,8 +315,8 @@
                 "tags": [
                     "Customers"
                 ],
-                "summary": "Get customer transaction data by location and registration week with offset pagination",
-                "description": "Get customer transaction data by location and week with offset pagination",
+                "summary": "Get customer transaction data by location and registration week with page-based pagination",
+                "description": "Get customer transaction data by location and week with page-based pagination",
                 "operationId": "1b4b22b0188313285975fd0cd51c761c",
                 "requestBody": {
                     "required": false,
@@ -341,14 +341,14 @@
                                         "type": "integer",
                                         "example": 1
                                     },
-                                    "offset": {
-                                        "description": "Number of items to skip",
+                                    "page": {
+                                        "description": "Page number",
                                         "type": "integer",
-                                        "default": 0,
-                                        "example": 0
+                                        "default": 1,
+                                        "example": 1
                                     },
-                                    "limit": {
-                                        "description": "Number of items to return",
+                                    "per_page": {
+                                        "description": "Number of items per page",
                                         "type": "integer",
                                         "default": 15,
                                         "example": 15
@@ -423,17 +423,25 @@
                                                     "type": "integer",
                                                     "example": 50
                                                 },
-                                                "limit": {
+                                                "per_page": {
                                                     "type": "integer",
                                                     "example": 15
                                                 },
-                                                "offset": {
+                                                "current_page": {
                                                     "type": "integer",
-                                                    "example": 0
+                                                    "example": 1
                                                 },
-                                                "has_more": {
-                                                    "type": "boolean",
-                                                    "example": true
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 4
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "example": 15
                                                 }
                                             },
                                             "type": "object"
