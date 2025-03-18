@@ -354,8 +354,8 @@ class CustomerController extends Controller
      *     @OA\RequestBody(
      *         required=false,
      *         @OA\JsonContent(
-     *             @OA\Property(property="start_date", type="string", format="date", example="2024-01-01", description="Start date for transaction filtering (YYYY-MM-DD)"),
-     *             @OA\Property(property="end_date", type="string", format="date", example="2024-01-07", description="End date for transaction filtering (YYYY-MM-DD)"),
+     *             @OA\Property(property="start_date", type="string", format="date-time", example="2024-01-01 00:00:00", description="Start date for transaction filtering (YYYY-MM-DD HH:MM:SS)"),
+     *             @OA\Property(property="end_date", type="string", format="date-time", example="2024-01-07 23:59:59", description="End date for transaction filtering (YYYY-MM-DD HH:MM:SS)"),
      *             @OA\Property(property="page", type="integer", example=1, default=1, description="Page number"),
      *             @OA\Property(property="per_page", type="integer", example=15, default=15, description="Number of items per page")
      *         )
@@ -416,9 +416,21 @@ class CustomerController extends Controller
     {
         // Retrieve filter parameters
         try {
-            $startDate = $request->input('start_date') ? new DateTime($request->input('start_date')) : now()->startOfWeek();
-            $endDate = $request->input('end_date') ? new DateTime($request->input('end_date')) : now()->endOfWeek();
-            $endDate->modify('+1 day'); // Include end date
+            // Default to full week if no dates provided
+            $startDate = $request->input('start_date')
+                ? new DateTime($request->input('start_date'))
+                : now()->startOfWeek()->setTime(0, 0, 0);
+            $endDate = $request->input('end_date')
+                ? new DateTime($request->input('end_date'))
+                : now()->endOfWeek()->setTime(23, 59, 59);
+
+            // Ensure full day coverage if only date is provided
+            if (strlen($request->input('start_date')) <= 10) {
+                $startDate->setTime(0, 0, 0);
+            }
+            if (strlen($request->input('end_date')) <= 10) {
+                $endDate->setTime(23, 59, 59);
+            }
         } catch (\Exception $e) {
             return response()->json(['message' => 'Invalid date format'], 400);
         }
