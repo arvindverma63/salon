@@ -9,6 +9,7 @@ use App\Models\ServiceTransaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CustomerController extends Controller
 {
@@ -91,6 +92,7 @@ class CustomerController extends Controller
         $query = User::where('role', 'customer');
         $total = $query->count();
         $users = $query->skip($offset)->take($limit)->get();
+        Log::info("users count : ",[$users]);
 
         $usersWithProfiles = [];
 
