@@ -310,6 +310,132 @@
                 }
             }
         },
+        "/api/getUser": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get paginated users with profiles and transaction data",
+                "description": "Get paginated list of users with their profiles and transaction totals",
+                "operationId": "4c9191de5805ba0134344c013da7b8ab",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "user": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "email": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "profile": {
+                                                        "properties": {
+                                                            "user_id": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "additionalProperties": true
+                                                    },
+                                                    "total_used_minutes": {
+                                                        "type": "number"
+                                                    },
+                                                    "total_service_purchased_price": {
+                                                        "type": "number"
+                                                    },
+                                                    "total_product_purchased_price": {
+                                                        "type": "number"
+                                                    },
+                                                    "total_price": {
+                                                        "type": "number"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": "integer"
+                                                },
+                                                "next_page_url": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "prev_page_url": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
         "/api/locations": {
             "get": {
                 "tags": [
@@ -826,7 +952,7 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID of the product transaction",
+                        "description": " user ID of the product transaction",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -993,12 +1119,12 @@
                 "tags": [
                     "Service Transactions"
                 ],
-                "summary": "Get a specific service transaction",
+                "summary": "Get a specific service transaction by user_id",
                 "description": "Retrieve the details of a specific service transaction.",
                 "operationId": "52b16c1e6c0af9913d65398036e74eb6",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "user_id",
                         "in": "path",
                         "description": "ID of the service transaction",
                         "required": true,
@@ -1162,160 +1288,6 @@
                                 }
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/api/service-usages": {
-            "get": {
-                "tags": [
-                    "Service Usages"
-                ],
-                "summary": "Get list of all service usages",
-                "description": "Retrieve a list of all service usages.",
-                "operationId": "4b8df32693ddd66cf96bc5a3a3da1aae",
-                "responses": {
-                    "200": {
-                        "description": "Successful operation"
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "Service Usages"
-                ],
-                "summary": "Create a new service usage",
-                "description": "Store a new service usage in the database.",
-                "operationId": "4e1d85baaace028a59f07692c5c99208",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "user_id": {
-                                        "type": "string",
-                                        "example": "1"
-                                    },
-                                    "ava_balance": {
-                                        "type": "string",
-                                        "example": "100"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Service usage created successfully"
-                    },
-                    "422": {
-                        "description": "Validation error"
-                    }
-                }
-            }
-        },
-        "/api/service-usages/{id}": {
-            "get": {
-                "tags": [
-                    "Service Usages"
-                ],
-                "summary": "Get a specific service usage",
-                "description": "Retrieve the details of a specific service usage.",
-                "operationId": "34c5b1ae0a520a852f8a93100c357b46",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "ID of the service usage to retrieve",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Service usage details"
-                    },
-                    "404": {
-                        "description": "Service usage not found"
-                    }
-                }
-            },
-            "put": {
-                "tags": [
-                    "Service Usages"
-                ],
-                "summary": "Update an existing service usage",
-                "description": "Update the details of an existing service usage.",
-                "operationId": "b7b2ed2aaaed68f9295ab0d34e23ee29",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "ID of the service usage to update",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "user_id": {
-                                        "type": "string",
-                                        "example": "1"
-                                    },
-                                    "ava_balance": {
-                                        "type": "string",
-                                        "example": "100"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Service usage updated successfully"
-                    },
-                    "404": {
-                        "description": "Service usage not found"
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "Service Usages"
-                ],
-                "summary": "Delete a specific service usage",
-                "description": "Permanently delete a service usage from the database.",
-                "operationId": "6f10bebd7715b4ca9230d152a46bf6cd",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "ID of the service usage to delete",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Service usage deleted successfully"
-                    },
-                    "404": {
-                        "description": "Service usage not found"
                     }
                 }
             }
@@ -1766,61 +1738,6 @@
                     }
                 }
             }
-        },
-        "/users/{id}/restore": {
-            "patch": {
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Restore a soft-deleted user",
-                "description": "Restores a previously soft-deleted user by their ID.",
-                "operationId": "c1ffa68de7f6e48ad68c82831fa050d4",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "ID of the user to restore",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User restored successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "User restored successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "error": {
-                                            "type": "string",
-                                            "example": "User not found"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     },
     "components": {
@@ -1876,6 +1793,10 @@
             "description": "Auth"
         },
         {
+            "name": "Users",
+            "description": "Users"
+        },
+        {
             "name": "Locations",
             "description": "Locations"
         },
@@ -1892,20 +1813,12 @@
             "description": "Service Transactions"
         },
         {
-            "name": "Service Usages",
-            "description": "Service Usages"
-        },
-        {
             "name": "Services",
             "description": "Services"
         },
         {
             "name": "User Profiles",
             "description": "User Profiles"
-        },
-        {
-            "name": "Users",
-            "description": "Users"
         }
     ]
 }

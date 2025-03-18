@@ -476,24 +476,72 @@ class AuthController extends Controller
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/**
+     * Get paginated list of users with their profiles and transaction totals
+     *
+     * @OA\Get(
+     *     path="/api/getUser",
+     *     summary="Get paginated users with profiles and transaction data",
+     *     tags={"Users"},
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="user", type="object",
+     *                         @OA\Property(property="id", type="integer"),
+     *                         @OA\Property(property="name", type="string"),
+     *                         @OA\Property(property="email", type="string")
+     *                     ),
+     *                     @OA\Property(property="profile", type="object",
+     *                         @OA\Property(property="user_id", type="integer"),
+     *                         additionalProperties=true
+     *                     ),
+     *                     @OA\Property(property="total_used_minutes", type="number"),
+     *                     @OA\Property(property="total_service_purchased_price", type="number"),
+     *                     @OA\Property(property="total_product_purchased_price", type="number"),
+     *                     @OA\Property(property="total_price", type="number")
+     *                 )
+     *             ),
+     *             @OA\Property(property="pagination", type="object",
+     *                 @OA\Property(property="total", type="integer"),
+     *                 @OA\Property(property="per_page", type="integer"),
+     *                 @OA\Property(property="current_page", type="integer"),
+     *                 @OA\Property(property="last_page", type="integer"),
+     *                 @OA\Property(property="from", type="integer"),
+     *                 @OA\Property(property="to", type="integer"),
+     *                 @OA\Property(property="next_page_url", type="string", nullable=true),
+     *                 @OA\Property(property="prev_page_url", type="string", nullable=true)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error"
+     *     )
+     * )
+     */
     public function getUser()
     {
-
         $users = User::paginate(15);
 
         $usersWithProfiles = [];
@@ -529,7 +577,6 @@ class AuthController extends Controller
             ];
         }
 
-        // Return paginated response
         return response()->json([
             'data' => $usersWithProfiles,
             'pagination' => [
