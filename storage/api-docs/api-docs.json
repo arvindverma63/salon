@@ -436,15 +436,60 @@
                 }
             }
         },
-        "/api/customers": {
+        "/api/customers/search": {
             "get": {
                 "tags": [
                     "Customers"
                 ],
-                "summary": "Get paginated list of customers with their transaction data",
-                "description": "Get paginated list of customers with their profiles and transaction totals",
-                "operationId": "b914c156fbb859b98e09cd86f44f3cbf",
+                "summary": "Search customers with filtering options",
+                "description": "Search customers by various criteria including profile fields",
+                "operationId": "f18fd66527e9da87aa9c81daad8b5ab7",
                 "parameters": [
+                    {
+                        "name": "first_name",
+                        "in": "query",
+                        "description": "Search by customer's first name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "last_name",
+                        "in": "query",
+                        "description": "Search by customer's last name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "phone_number",
+                        "in": "query",
+                        "description": "Search by customer's phone number",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "description": "Search by customer email",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "min_total",
+                        "in": "query",
+                        "description": "Minimum total purchase amount",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
                     {
                         "name": "page",
                         "in": "query",
@@ -499,26 +544,34 @@
                                                         "properties": {
                                                             "user_id": {
                                                                 "type": "integer"
+                                                            },
+                                                            "first_name": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "last_name": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "phone_number": {
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object",
                                                         "additionalProperties": true
                                                     },
                                                     "total_used_minutes": {
-                                                        "type": "number",
-                                                        "example": 120
+                                                        "type": "number"
                                                     },
                                                     "total_service_purchased_price": {
-                                                        "type": "number",
-                                                        "example": 100.5
+                                                        "type": "number"
                                                     },
                                                     "total_product_purchased_price": {
-                                                        "type": "number",
-                                                        "example": 75.25
+                                                        "type": "number"
                                                     },
                                                     "total_price": {
-                                                        "type": "number",
-                                                        "example": 175.75
+                                                        "type": "number"
                                                     }
                                                 },
                                                 "type": "object"
@@ -527,37 +580,29 @@
                                         "pagination": {
                                             "properties": {
                                                 "total": {
-                                                    "type": "integer",
-                                                    "example": 50
+                                                    "type": "integer"
                                                 },
                                                 "per_page": {
-                                                    "type": "integer",
-                                                    "example": 15
+                                                    "type": "integer"
                                                 },
                                                 "current_page": {
-                                                    "type": "integer",
-                                                    "example": 1
+                                                    "type": "integer"
                                                 },
                                                 "last_page": {
-                                                    "type": "integer",
-                                                    "example": 4
+                                                    "type": "integer"
                                                 },
                                                 "from": {
-                                                    "type": "integer",
-                                                    "example": 1
+                                                    "type": "integer"
                                                 },
                                                 "to": {
-                                                    "type": "integer",
-                                                    "example": 15
+                                                    "type": "integer"
                                                 },
                                                 "next_page_url": {
                                                     "type": "string",
-                                                    "example": "http://example.com/api/customers?page=2",
                                                     "nullable": true
                                                 },
                                                 "prev_page_url": {
                                                     "type": "string",
-                                                    "example": null,
                                                     "nullable": true
                                                 }
                                             },
@@ -569,15 +614,15 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "400": {
+                        "description": "Invalid search parameters",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "Unauthorized"
+                                            "example": "Invalid search parameters"
                                         }
                                     },
                                     "type": "object"

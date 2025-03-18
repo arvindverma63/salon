@@ -59,6 +59,7 @@ Route::post('/service-use-report',[ServiceTransactionController::class,'serviceU
 Route::post('getUserd',[AuthController::class,'getUserd']);
 Route::post('/customerDayUsage',[ServiceTransactionController::class,'customerDayUsage']);
 Route::get('/customers', [CustomerController::class, 'getAllCustomers']);
+Route::get('/customers/search', [CustomerController::class, 'searchCustomers']);
 
 Route::get('getUser',[AuthController::class,'getUser']);
 Route::group(['middleware' => 'auth:api'], function () {
