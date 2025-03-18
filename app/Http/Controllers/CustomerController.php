@@ -238,17 +238,11 @@ class CustomerController extends Controller
 
          // Apply location filter with key search
          if ($request->has('locationId')) {
-             $locationId = $request->input('locationId');
-             // Treat null or empty locationId as invalid
-             if ($locationId === null) {
-                 if (!$request->has('email')) {
-                     return response()->json(['data' => []]);
-                 }
-             } else {
+
                  $hasValidFilter = true;
                  if ($request->has('key') && $request->input('key') !== '') {
                      $key = '%' . $request->input('key') . '%';
-                     $profileQuery->where('preferred_location', $locationId)
+                     $profileQuery->where('preferred_location', $request->input('locationId'))
                          ->where(function ($q) use ($key) {
                              $q->where('firstName', 'like', $key)
                                  ->orWhere('lastName', 'like', $key)
@@ -256,9 +250,9 @@ class CustomerController extends Controller
                          });
                  } else {
                      // When key is empty or not provided, filter only by locationId (including '0')
-                     $profileQuery->where('preferred_location', $locationId);
+                     $profileQuery->where('preferred_location', $request->input('locationId'));
                  }
-             }
+
          } else {
              // Apply single key search across multiple profile fields
              if ($request->has('key')) {
