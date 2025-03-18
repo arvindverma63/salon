@@ -783,8 +783,8 @@
                 "tags": [
                     "Customers"
                 ],
-                "summary": "Search customers with filtering options using offset pagination",
-                "description": "Search customers by various criteria including profile fields using offset pagination",
+                "summary": "Search customers with filtering options using page-based pagination",
+                "description": "Search customers by various criteria including profile fields using page-based pagination",
                 "operationId": "f18fd66527e9da87aa9c81daad8b5ab7",
                 "parameters": [
                     {
@@ -833,19 +833,19 @@
                         }
                     },
                     {
-                        "name": "offset",
+                        "name": "page",
                         "in": "query",
-                        "description": "Number of items to skip",
+                        "description": "Page number",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": 0
+                            "default": 1
                         }
                     },
                     {
-                        "name": "limit",
+                        "name": "per_page",
                         "in": "query",
-                        "description": "Number of items to return",
+                        "description": "Number of items per page",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -927,14 +927,20 @@
                                                 "total": {
                                                     "type": "integer"
                                                 },
-                                                "limit": {
+                                                "per_page": {
                                                     "type": "integer"
                                                 },
-                                                "offset": {
+                                                "current_page": {
                                                     "type": "integer"
                                                 },
-                                                "has_more": {
-                                                    "type": "boolean"
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": "integer"
                                                 }
                                             },
                                             "type": "object"

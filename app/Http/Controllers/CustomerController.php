@@ -142,11 +142,11 @@ class CustomerController extends Controller
     }
 
     /**
-     * Search customers by various criteria including profile fields using offset pagination
+     * Search customers by various criteria including profile fields using page-based pagination
      *
      * @OA\Get(
      *     path="/api/customers/search",
-     *     summary="Search customers with filtering options using offset pagination",
+     *     summary="Search customers with filtering options using page-based pagination",
      *     tags={"Customers"},
      *     @OA\Parameter(
      *         name="firstName",
@@ -184,16 +184,16 @@ class CustomerController extends Controller
      *         @OA\Schema(type="number")
      *     ),
      *     @OA\Parameter(
-     *         name="offset",
+     *         name="page",
      *         in="query",
-     *         description="Number of items to skip",
+     *         description="Page number",
      *         required=false,
-     *         @OA\Schema(type="integer", default=0)
+     *         @OA\Schema(type="integer", default=1)
      *     ),
      *     @OA\Parameter(
-     *         name="limit",
+     *         name="per_page",
      *         in="query",
-     *         description="Number of items to return",
+     *         description="Number of items per page",
      *         required=false,
      *         @OA\Schema(type="integer", default=15)
      *     ),
@@ -225,9 +225,11 @@ class CustomerController extends Controller
      *             ),
      *             @OA\Property(property="pagination", type="object",
      *                 @OA\Property(property="total", type="integer"),
-     *                 @OA\Property(property="limit", type="integer"),
-     *                 @OA\Property(property="offset", type="integer"),
-     *                 @OA\Property(property="has_more", type="boolean")
+     *                 @OA\Property(property="per_page", type="integer"),
+     *                 @OA\Property(property="current_page", type="integer"),
+     *                 @OA\Property(property="last_page", type="integer"),
+     *                 @OA\Property(property="from", type="integer"),
+     *                 @OA\Property(property="to", type="integer")
      *             )
      *         )
      *     ),
@@ -249,7 +251,11 @@ class CustomerController extends Controller
      */
     public function searchCustomers(Request $request)
     {
-        $query = User::where('role', 'customer');
+        $perPage = $request->input('per_page', 15);
+        $page = $request->input('page', 1);
+        $offset = ($page - 1) * $perPage;
+
+        $query = User::where('role', 'customer')->orderBy('id');
 
         // Apply email filter
         if ($request->has('email')) {
@@ -279,20 +285,20 @@ class CustomerController extends Controller
                     'data' => [],
                     'pagination' => [
                         'total' => 0,
-                        'limit' => $request->input('limit', 15),
-                        'offset' => $request->input('offset', 0),
-                        'has_more' => false
+                        'per_page' => $perPage,
+                        'current_page' => $page,
+                        'last_page' => 0,
+                        'from' => null,
+                        'to' => null
                     ]
                 ]);
             }
             $query->whereIn('id', $matchingUserIds);
         }
 
-        // Offset-based pagination
-        $limit = $request->input('limit', 15);
-        $offset = $request->input('offset', 0);
+        // Page-based pagination
         $total = $query->count();
-        $users = $query->skip($offset)->take($limit)->get();
+        $users = $query->skip($offset)->take($perPage)->get();
 
         $usersWithProfiles = [];
 
@@ -338,12 +344,16 @@ class CustomerController extends Controller
             'data' => $usersWithProfiles,
             'pagination' => [
                 'total' => $total,
-                'limit' => $limit,
-                'offset' => $offset,
-                'has_more' => ($offset + count($usersWithProfiles)) < $total
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'last_page' => ceil($total / $perPage),
+                'from' => $offset + 1,
+                'to' => $offset + count($usersWithProfiles)
             ]
         ]);
     }
+
+
     /**
      * Get customers with transaction data within a date range using page-based pagination
      *
