@@ -243,7 +243,7 @@ class CustomerController extends Controller
 
          // Apply location filter with key search
          if ($request->has('locationId')) {
-             if ($request->input('locationId') != null && $request->input('locationId') != '0') {
+             if ($request->input('locationId') != null) {
                  $hasValidFilter = true;
                  $key = '%' . $request->input('key') . '%';
                  $profileQuery->where('preferred_location', $request->input('locationId'))
