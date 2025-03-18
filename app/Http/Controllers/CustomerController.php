@@ -142,11 +142,11 @@ class CustomerController extends Controller
     }
 
     /**
-     * Search customers by various criteria including profile fields using page-based pagination
+     * Search customers by various criteria including profile fields
      *
      * @OA\Get(
      *     path="/api/customers/search",
-     *     summary="Search customers with filtering options using page-based pagination",
+     *     summary="Search customers with filtering options",
      *     tags={"Customers"},
      *     @OA\Parameter(
      *         name="firstName",
@@ -183,20 +183,6 @@ class CustomerController extends Controller
      *         required=false,
      *         @OA\Schema(type="number")
      *     ),
-     *     @OA\Parameter(
-     *         name="page",
-     *         in="query",
-     *         description="Page number",
-     *         required=false,
-     *         @OA\Schema(type="integer", default=1)
-     *     ),
-     *     @OA\Parameter(
-     *         name="per_page",
-     *         in="query",
-     *         description="Number of items per page",
-     *         required=false,
-     *         @OA\Schema(type="integer", default=15)
-     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -222,14 +208,6 @@ class CustomerController extends Controller
      *                     @OA\Property(property="total_product_purchased_price", type="number"),
      *                     @OA\Property(property="total_price", type="number")
      *                 )
-     *             ),
-     *             @OA\Property(property="pagination", type="object",
-     *                 @OA\Property(property="total", type="integer"),
-     *                 @OA\Property(property="per_page", type="integer"),
-     *                 @OA\Property(property="current_page", type="integer"),
-     *                 @OA\Property(property="last_page", type="integer"),
-     *                 @OA\Property(property="from", type="integer"),
-     *                 @OA\Property(property="to", type="integer")
      *             )
      *         )
      *     ),
@@ -251,10 +229,6 @@ class CustomerController extends Controller
      */
     public function searchCustomers(Request $request)
     {
-        $perPage = $request->input('per_page', 15);
-        $page = $request->input('page', 1);
-        $offset = ($page - 1) * $perPage;
-
         $query = User::where('role', 'customer')->orderBy('id');
 
         // Apply email filter
@@ -281,24 +255,13 @@ class CustomerController extends Controller
         if ($request->hasAny(['firstName', 'lastName', 'phone_number'])) {
             $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
             if (empty($matchingUserIds)) {
-                return response()->json([
-                    'data' => [],
-                    'pagination' => [
-                        'total' => 0,
-                        'per_page' => $perPage,
-                        'current_page' => $page,
-                        'last_page' => 0,
-                        'from' => null,
-                        'to' => null
-                    ]
-                ]);
+                return response()->json(['data' => []]);
             }
             $query->whereIn('id', $matchingUserIds);
         }
 
-        // Page-based pagination
-        $total = $query->count();
-        $users = $query->skip($offset)->take($perPage)->get();
+        // Fetch all matching users without pagination
+        $users = $query->get();
 
         $usersWithProfiles = [];
 
@@ -340,19 +303,8 @@ class CustomerController extends Controller
             ];
         }
 
-        return response()->json([
-            'data' => $usersWithProfiles,
-            'pagination' => [
-                'total' => $total,
-                'per_page' => $perPage,
-                'current_page' => $page,
-                'last_page' => ceil($total / $perPage),
-                'from' => $offset + 1,
-                'to' => $offset + count($usersWithProfiles)
-            ]
-        ]);
+        return response()->json(['data' => $usersWithProfiles]);
     }
-
 
     /**
      * Get customers with transaction data within a date range using page-based pagination

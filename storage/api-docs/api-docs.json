@@ -783,8 +783,8 @@
                 "tags": [
                     "Customers"
                 ],
-                "summary": "Search customers with filtering options using page-based pagination",
-                "description": "Search customers by various criteria including profile fields using page-based pagination",
+                "summary": "Search customers with filtering options",
+                "description": "Search customers by various criteria including profile fields",
                 "operationId": "f18fd66527e9da87aa9c81daad8b5ab7",
                 "parameters": [
                     {
@@ -830,26 +830,6 @@
                         "required": false,
                         "schema": {
                             "type": "number"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Number of items per page",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
                         }
                     }
                 ],
@@ -921,29 +901,6 @@
                                                 },
                                                 "type": "object"
                                             }
-                                        },
-                                        "pagination": {
-                                            "properties": {
-                                                "total": {
-                                                    "type": "integer"
-                                                },
-                                                "per_page": {
-                                                    "type": "integer"
-                                                },
-                                                "current_page": {
-                                                    "type": "integer"
-                                                },
-                                                "last_page": {
-                                                    "type": "integer"
-                                                },
-                                                "from": {
-                                                    "type": "integer"
-                                                },
-                                                "to": {
-                                                    "type": "integer"
-                                                }
-                                            },
-                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
