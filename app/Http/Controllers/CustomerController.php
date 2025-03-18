@@ -89,6 +89,7 @@ class CustomerController extends Controller
     {
         $perPage = $request->input('per_page', 15);
         $page = $request->input('page', 1);
+        $searchKey = $request->input('searchKey');
         $offset = ($page - 1) * $perPage;
 
         $query = User::where('role', 'customer')->orderBy('id');
@@ -149,39 +150,32 @@ class CustomerController extends Controller
      *     summary="Search customers with filtering options",
      *     tags={"Customers"},
      *     @OA\Parameter(
-     *         name="firstName",
-     *         in="query",
-     *         description="Search by customer's first name",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="lastName",
-     *         in="query",
-     *         description="Search by customer's last name",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="phone_number",
-     *         in="query",
-     *         description="Search by customer's phone number",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="email",
-     *         in="query",
-     *         description="Search by customer email",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
      *         name="min_total",
      *         in="query",
      *         description="Minimum total purchase amount",
      *         required=false,
      *         @OA\Schema(type="number")
+     *     ),
+     *     @OA\Parameter(
+     *         name="email",
+     *         in="query",
+     *         description="Email address to filter by (partial match)",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="key",
+     *         in="query",
+     *         description="Search term to match against firstName, lastName, or phone_number",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="locationId",
+     *         in="query",
+     *         description="Filter by preferred location ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -227,32 +221,49 @@ class CustomerController extends Controller
      *     )
      * )
      */
+
     public function searchCustomers(Request $request)
     {
+        // Initialize base query for customers
         $query = User::where('role', 'customer')->orderBy('id');
 
-        // Apply email filter
+        // Apply email filter if provided
         if ($request->has('email')) {
             $query->where('email', 'like', '%' . $request->input('email') . '%');
         }
 
-        // Get matching user IDs from user_profiles for profile fields
+        // Set up profile query for filtering by profile fields
         $profileQuery = DB::table('user_profiles');
 
-        if ($request->has('firstName')) {
-            $profileQuery->where('firstName', 'like', '%' . $request->input('firstName') . '%');
+        // Apply single key search across multiple profile fields
+
+
+        // Apply location filter with optional key search
+        if ($request->has('locationId')) {
+            if ($request->input('locationId') != null && $request->input('locationId') != '0') {
+                $key = $request->has('key') ? '%' . $request->input('key') . '%' : '%';
+                $profileQuery->where('preferred_location', $request->input('locationId'))
+                    ->where(function ($q) use ($key) {
+                        $q->where('firstName', 'like', $key)
+                            ->orWhere('lastName', 'like', $key)
+                            ->orWhere('phone_number', 'like', $key);
+                    });
+            }
+        }
+        else{
+            if ($request->has('key')) {
+                $key = $request->input('key') . '%';
+                $profileQuery->where(function ($q) use ($key) {
+                    $q->where('firstName', 'like', $key)
+                        ->orWhere('lastName', 'like', $key)
+                        ->orWhere('phone_number', 'like', $key);
+                });
+            }
         }
 
-        if ($request->has('lastName')) {
-            $profileQuery->where('lastName', 'like', '%' . $request->input('lastName') . '%');
-        }
 
-        if ($request->has('phone_number')) {
-            $profileQuery->where('phone_number', 'like', '%' . $request->input('phone_number') . '%');
-        }
-
-        // If any profile filters are applied, restrict users to matching profile user_ids
-        if ($request->hasAny(['firstName', 'lastName', 'phone_number'])) {
+        // Apply profile filters to main query if any exist
+        if ($request->hasAny(['key', 'locationId'])) {
             $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
             if (empty($matchingUserIds)) {
                 return response()->json(['data' => []]);
@@ -260,17 +271,20 @@ class CustomerController extends Controller
             $query->whereIn('id', $matchingUserIds);
         }
 
-        // Fetch all matching users without pagination
+        // Execute query and get results
         $users = $query->get();
-
         $usersWithProfiles = [];
 
+        // Process each user and calculate totals
         foreach ($users as $user) {
             $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
+
+            // Calculate total used minutes from service transactions
             $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
                 ->where('type', 'used')
                 ->sum('quantity');
 
+            // Calculate total service purchase price
             $totalServicePurchasedPrice = ServiceTransaction::where('user_id', $user->id)
                 ->where('type', 'purchased')
                 ->get()
@@ -279,6 +293,7 @@ class CustomerController extends Controller
                     return $service ? $service->price : 0;
                 });
 
+            // Calculate total product purchase price
             $totalProductPurchasedPrice = ProductTransaction::where('user_id', $user->id)
                 ->get()
                 ->sum(function ($transaction) {
@@ -288,11 +303,12 @@ class CustomerController extends Controller
 
             $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
 
-            // Apply minimum total filter
+            // Apply minimum total filter if specified
             if ($request->has('min_total') && $totalPrice < $request->input('min_total')) {
                 continue;
             }
 
+            // Build result array for each user
             $usersWithProfiles[] = [
                 'user' => $user,
                 'profile' => $profile,

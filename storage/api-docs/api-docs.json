@@ -788,48 +788,39 @@
                 "operationId": "f18fd66527e9da87aa9c81daad8b5ab7",
                 "parameters": [
                     {
-                        "name": "firstName",
-                        "in": "query",
-                        "description": "Search by customer's first name",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "lastName",
-                        "in": "query",
-                        "description": "Search by customer's last name",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "phone_number",
-                        "in": "query",
-                        "description": "Search by customer's phone number",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "email",
-                        "in": "query",
-                        "description": "Search by customer email",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "min_total",
                         "in": "query",
                         "description": "Minimum total purchase amount",
                         "required": false,
                         "schema": {
                             "type": "number"
+                        }
+                    },
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "description": "Email address to filter by (partial match)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "key",
+                        "in": "query",
+                        "description": "Search term to match against firstName, lastName, or phone_number",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "locationId",
+                        "in": "query",
+                        "description": "Filter by preferred location ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 ],

@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Models\ServiceTransaction;
 use App\Models\ProductTransaction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 
@@ -435,7 +436,7 @@ class UserProfileController extends Controller
 
 
 
-    
+
 
 
 public function clearData() {
@@ -444,21 +445,21 @@ public function clearData() {
     try {
         // Temporarily disable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
+
         // Truncate tables
         // Service::truncate();
         ServiceTransaction::truncate();
         // Product::truncate();
         ProductTransaction::truncate();
-        
+
         // Delete users with 'customer' role
         User::where('role', 'customer')->delete();
-        
+
         DB::commit();
     } catch (\Exception $e) {
         DB::rollBack();
         // Log error for debugging
-        \Log::error("Error clearing data: {$e->getMessage()}");
+        Log::error("Error clearing data: {$e->getMessage()}");
         throw $e;
     } finally {
         // Ensure foreign key checks are re-enabled
