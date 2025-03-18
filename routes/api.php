@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\ProductController;
@@ -57,6 +58,7 @@ Route::post('/service-purchase-report',[ServiceTransactionController::class,'ser
 Route::post('/service-use-report',[ServiceTransactionController::class,'serviceUse']);
 Route::post('getUserd',[AuthController::class,'getUserd']);
 Route::post('/customerDayUsage',[ServiceTransactionController::class,'customerDayUsage']);
+Route::get('/customers', [CustomerController::class, 'getAllCustomers']);
 
 Route::get('getUser',[AuthController::class,'getUser']);
 Route::group(['middleware' => 'auth:api'], function () {
