@@ -47,6 +47,9 @@ class CustomerController extends Controller
      *                     ),
      *                     @OA\Property(property="profile", type="object",
      *                         @OA\Property(property="user_id", type="integer"),
+     *                         @OA\Property(property="first_name", type="string", nullable=true),
+     *                         @OA\Property(property="last_name", type="string", nullable=true),
+     *                         @OA\Property(property="phone_number", type="string", nullable=true),
      *                         additionalProperties=true
      *                     ),
      *                     @OA\Property(property="total_used_minutes", type="number", example=120),
@@ -83,9 +86,10 @@ class CustomerController extends Controller
      *     )
      * )
      */
-    public function getAllCustomers()
+    public function getAllCustomers(Request $request)
     {
-        $users = User::where('role', 'customer')->paginate(15);
+        $perPage = $request->input('per_page', 15);
+        $users = User::where('role', 'customer')->paginate($perPage);
 
         $usersWithProfiles = [];
 
@@ -134,6 +138,7 @@ class CustomerController extends Controller
             ]
         ]);
     }
+
     /**
      * Search customers by various criteria including profile fields
      *
@@ -245,34 +250,41 @@ class CustomerController extends Controller
      */
     public function searchCustomers(Request $request)
     {
-        $query = User::where('role', 'customer')
-            ->leftJoin('user_profiles', 'users.id', '=', 'user_profiles.user_id');
+        $query = User::where('role', 'customer');
 
-        // Apply search filters
-        if ($request->has('first_name')) {
-            $query->where('user_profiles.first_name', 'like', '%' . $request->input('first_name') . '%');
-        }
-
-        if ($request->has('last_name')) {
-            $query->where('user_profiles.last_name', 'like', '%' . $request->input('last_name') . '%');
-        }
-
-        if ($request->has('phone_number')) {
-            $query->where('user_profiles.phone_number', 'like', '%' . $request->input('phone_number') . '%');
-        }
-
+        // Apply email filter directly on users table
         if ($request->has('email')) {
-            $query->where('users.email', 'like', '%' . $request->input('email') . '%');
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
         }
 
-        // Pagination
+        // Get initial paginated users
         $perPage = $request->input('per_page', 15);
-        $users = $query->select('users.*')->paginate($perPage);
+        $users = $query->paginate($perPage);
 
         $usersWithProfiles = [];
 
         foreach ($users as $user) {
             $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
+
+            // Apply profile filters
+            if ($request->has('first_name') && $profile) {
+                if (stripos($profile->first_name ?? '', $request->input('first_name')) === false) {
+                    continue;
+                }
+            }
+
+            if ($request->has('last_name') && $profile) {
+                if (stripos($profile->last_name ?? '', $request->input('last_name')) === false) {
+                    continue;
+                }
+            }
+
+            if ($request->has('phone_number') && $profile) {
+                if (stripos($profile->phone_number ?? '', $request->input('phone_number')) === false) {
+                    continue;
+                }
+            }
+
             $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
                 ->where('type', 'used')
                 ->sum('quantity');
@@ -294,7 +306,7 @@ class CustomerController extends Controller
 
             $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
 
-            // Apply minimum total filter if provided
+            // Apply minimum total filter
             if ($request->has('min_total') && $totalPrice < $request->input('min_total')) {
                 continue;
             }

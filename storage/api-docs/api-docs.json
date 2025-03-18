@@ -499,6 +499,18 @@
                                                         "properties": {
                                                             "user_id": {
                                                                 "type": "integer"
+                                                            },
+                                                            "first_name": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "last_name": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "phone_number": {
+                                                                "type": "string",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object",
