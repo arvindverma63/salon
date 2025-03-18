@@ -998,13 +998,13 @@
                                         "description": "Start date for transaction filtering (YYYY-MM-DD HH:MM:SS)",
                                         "type": "string",
                                         "format": "date-time",
-                                        "example": "2024-01-01 00:00:00"
+                                        "example": "2023-01-01 00:00:00"
                                     },
                                     "end_date": {
                                         "description": "End date for transaction filtering (YYYY-MM-DD HH:MM:SS)",
                                         "type": "string",
                                         "format": "date-time",
-                                        "example": "2024-01-07 23:59:59"
+                                        "example": "2023-01-07 23:59:59"
                                     },
                                     "page": {
                                         "description": "Page number",

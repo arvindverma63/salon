@@ -354,8 +354,8 @@ class CustomerController extends Controller
      *     @OA\RequestBody(
      *         required=false,
      *         @OA\JsonContent(
-     *             @OA\Property(property="start_date", type="string", format="date-time", example="2024-01-01 00:00:00", description="Start date for transaction filtering (YYYY-MM-DD HH:MM:SS)"),
-     *             @OA\Property(property="end_date", type="string", format="date-time", example="2024-01-07 23:59:59", description="End date for transaction filtering (YYYY-MM-DD HH:MM:SS)"),
+     *             @OA\Property(property="start_date", type="string", format="date-time", example="2023-01-01 00:00:00", description="Start date for transaction filtering (YYYY-MM-DD HH:MM:SS)"),
+     *             @OA\Property(property="end_date", type="string", format="date-time", example="2023-01-07 23:59:59", description="End date for transaction filtering (YYYY-MM-DD HH:MM:SS)"),
      *             @OA\Property(property="page", type="integer", example=1, default=1, description="Page number"),
      *             @OA\Property(property="per_page", type="integer", example=15, default=15, description="Number of items per page")
      *         )
@@ -416,7 +416,6 @@ class CustomerController extends Controller
     {
         // Retrieve filter parameters
         try {
-            // Default to full week if no dates provided
             $startDate = $request->input('start_date')
                 ? new DateTime($request->input('start_date'))
                 : now()->startOfWeek()->setTime(0, 0, 0);
@@ -431,6 +430,12 @@ class CustomerController extends Controller
             if (strlen($request->input('end_date')) <= 10) {
                 $endDate->setTime(23, 59, 59);
             }
+
+            // Log the date range for debugging
+            Log::info('Date Range', [
+                'start_date' => $startDate->format('Y-m-d H:i:s'),
+                'end_date' => $endDate->format('Y-m-d H:i:s')
+            ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Invalid date format'], 400);
         }
@@ -439,35 +444,78 @@ class CustomerController extends Controller
         $page = $request->input('page', 1);
         $offset = ($page - 1) * $perPage;
 
-        $query = User::where('role', 'customer')->orderBy('id');
+        // Get users with transactions in the date range
+        $userIdsWithTransactions = array_unique(array_merge(
+            ServiceTransaction::whereBetween('created_at', [$startDate, $endDate])
+                ->pluck('user_id')->toArray(),
+            ProductTransaction::whereBetween('created_at', [$startDate, $endDate])
+                ->pluck('user_id')->toArray()
+        ));
+
+        // Log user IDs with transactions
+        Log::info('Users with transactions in date range', ['user_ids' => $userIdsWithTransactions]);
+
+        $query = User::where('role', 'customer')
+            ->whereIn('id', $userIdsWithTransactions) // Only users with transactions
+            ->orderBy('id');
+
         $total = $query->count();
+        if ($total === 0) {
+            Log::info('No customers with transactions found in date range');
+            return response()->json([
+                'data' => [],
+                'pagination' => [
+                    'total' => 0,
+                    'per_page' => $perPage,
+                    'current_page' => $page,
+                    'last_page' => 0,
+                    'from' => null,
+                    'to' => null
+                ]
+            ]);
+        }
+
         $users = $query->skip($offset)->take($perPage)->get();
 
         $usersWithProfiles = [];
 
         foreach ($users as $user) {
             $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
+
             $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
                 ->where('type', 'used')
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->sum('quantity');
 
-            $totalServicePurchasedPrice = ServiceTransaction::where('user_id', $user->id)
+            $serviceTransactions = ServiceTransaction::where('user_id', $user->id)
                 ->where('type', 'purchased')
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->get()
-                ->sum(function ($transaction) {
-                    $service = Service::find($transaction->service_id);
-                    return $service ? $service->price : 0;
-                });
+                ->get();
+            $totalServicePurchasedPrice = $serviceTransactions->sum(function ($transaction) {
+                $service = Service::find($transaction->service_id);
+                return $service ? $service->price : 0;
+            });
 
-            $totalProductPurchasedPrice = ProductTransaction::where('user_id', $user->id)
+            $productTransactions = ProductTransaction::where('user_id', $user->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->get()
-                ->sum(function ($transaction) {
-                    $product = Product::find($transaction->product_id);
-                    return $product ? $transaction->quantity * $product->price : 0;
-                });
+                ->get();
+            $totalProductPurchasedPrice = $productTransactions->sum(function ($transaction) {
+                $product = Product::find($transaction->product_id);
+                return $product ? $transaction->quantity * $product->price : 0;
+            });
+
+            $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
+
+            // Log transaction details for debugging
+            Log::info('User Transaction Data', [
+                'user_id' => $user->id,
+                'total_used_minutes' => $totalUsedMinutes,
+                'total_service_purchased_price' => $totalServicePurchasedPrice,
+                'total_product_purchased_price' => $totalProductPurchasedPrice,
+                'total_price' => $totalPrice,
+                'service_transactions' => $serviceTransactions->toArray(),
+                'product_transactions' => $productTransactions->toArray()
+            ]);
 
             $usersWithProfiles[] = [
                 'user' => $user,
@@ -475,7 +523,7 @@ class CustomerController extends Controller
                 'total_used_minutes' => $totalUsedMinutes,
                 'total_service_purchased_price' => $totalServicePurchasedPrice,
                 'total_product_purchased_price' => $totalProductPurchasedPrice,
-                'total_price' => $totalServicePurchasedPrice + $totalProductPurchasedPrice
+                'total_price' => $totalPrice
             ];
         }
 
