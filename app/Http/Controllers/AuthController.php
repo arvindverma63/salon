@@ -349,7 +349,6 @@ class AuthController extends Controller
     }
 
 
-
     /**
      * Get customer transaction data by location and week with offset pagination
      *
@@ -415,7 +414,7 @@ class AuthController extends Controller
         try {
             $startDate = $request->input('start_date') ? new DateTime($request->input('start_date')) : now()->startOfWeek();
             $endDate = $request->input('end_date') ? new DateTime($request->input('end_date')) : now()->endOfWeek();
-            $endDate->modify('+1 day'); // Add one day to include the end date
+            $endDate->modify('+1 day');
         } catch (\Exception $e) {
             return response()->json(['message' => 'Invalid date format'], 400);
         }
@@ -424,64 +423,51 @@ class AuthController extends Controller
         $limit = $request->input('limit', 15);
         $offset = $request->input('offset', 0);
 
-        // Get all users with the customer role (no pagination yet)
-        $users = User::where('role', 'customer')->get();
+        // Fetch all locations once
+        $locations = DB::table('locations')->pluck('name', 'id')->toArray();
 
-        // Initialize array to store results
+        // Fetch user profiles with preferred locations in bulk
+        $profiles = DB::table('user_profiles')
+            ->select('user_id', 'preferred_location')
+            ->whereIn('user_id', User::where('role', 'customer')->pluck('id'))
+            ->get()
+            ->pluck('preferred_location', 'user_id')
+            ->toArray();
+
+        // Base user query with early filtering
+        $usersQuery = User::where('role', 'customer')
+            ->select('id', 'created_at');
+
+        $users = $usersQuery->get();
+
+        // Fetch all transactions in bulk within date range
+        $serviceTransactions = ServiceTransaction::whereBetween('created_at', [$startDate, $endDate])
+            ->with('service:id,price') // Eager load service prices
+            ->get()
+            ->groupBy('user_id');
+
+        $productTransactions = ProductTransaction::whereBetween('created_at', [$startDate, $endDate])
+            ->with('product:id,price') // Eager load product prices
+            ->get()
+            ->groupBy('user_id');
+
+        // Initialize result array
         $dataByLocationAndWeek = [];
 
-        // Process each user
         foreach ($users as $user) {
-            $preferredLocation = DB::table('user_profiles')
-                ->where('user_id', $user->id)
-                ->value('preferred_location');
+            $userId = $user->id;
+            $preferredLocation = $profiles[$userId] ?? null;
+            $locationId = $preferredLocation && isset($locations[$preferredLocation]) ? $preferredLocation : null;
 
-            $locationId = $preferredLocation ? DB::table('locations')->where('id', $preferredLocation)->value('id') : null;
-
-            // Skip if location doesn't match filter
+            // Apply location filter early
             if ($locationIdFilter && $locationId != $locationIdFilter) {
                 continue;
             }
 
-            $registrationDate = $user->created_at;
-            $registrationWeekNumber = (new DateTime($registrationDate))->format('W');
+            $registrationWeekNumber = (new DateTime($user->created_at))->format('W');
+            $locationName = $locationId ? ($locations[$locationId] ?? 'All') : 'All';
 
-            $totalSpent = 0;
-
-            // Service transactions
-            $serviceTransactions = ServiceTransaction::where('user_id', $user->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->get();
-
-            Log::info('User ID: ' . $user->id . ' Service Transactions: ', $serviceTransactions->toArray());
-
-            foreach ($serviceTransactions as $serviceTransaction) {
-                $service = Service::find($serviceTransaction->service_id);
-                $serviceSpent = $service ? $service->price : 0;
-                $totalSpent += $serviceSpent;
-                Log::info('Service ID: ' . $serviceTransaction->service_id . ' Spent: ' . $serviceSpent);
-            }
-
-            // Product transactions
-            $productTransactions = ProductTransaction::where('user_id', $user->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->get();
-
-            Log::info('User ID: ' . $user->id . ' Product Transactions: ', $productTransactions->toArray());
-
-            foreach ($productTransactions as $productTransaction) {
-                $product = Product::find($productTransaction->product_id);
-                $productSpent = $product ? $product->price * $productTransaction->quantity : 0;
-                $totalSpent += $productSpent;
-                Log::info('Product ID: ' . $productTransaction->product_id . ' Spent: ' . $productSpent);
-            }
-
-            $locationName = 'All';
-            if ($locationId) {
-                $location = DB::table('locations')->find($locationId);
-                $locationName = $location ? $location->name : 'All';
-            }
-
+            // Initialize location-week entry
             if (!isset($dataByLocationAndWeek[$locationName][$registrationWeekNumber])) {
                 $dataByLocationAndWeek[$locationName][$registrationWeekNumber] = [
                     'location_name' => $locationName,
@@ -497,17 +483,41 @@ class AuthController extends Controller
                 ];
             }
 
-            $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['total_registered_customers'] += 1;
+            $entry = &$dataByLocationAndWeek[$locationName][$registrationWeekNumber];
+            $entry['total_registered_customers'] += 1;
+
+            $totalSpent = 0;
+            $transactionCount = 0;
+
+            // Process service transactions
+            if (isset($serviceTransactions[$userId])) {
+                foreach ($serviceTransactions[$userId] as $transaction) {
+                    $serviceSpent = $transaction->service->price ?? 0;
+                    $totalSpent += $serviceSpent;
+                    $transactionCount++;
+                    Log::info('User ID: ' . $userId . ' Service ID: ' . $transaction->service_id . ' Spent: ' . $serviceSpent);
+                }
+            }
+
+            // Process product transactions
+            if (isset($productTransactions[$userId])) {
+                foreach ($productTransactions[$userId] as $transaction) {
+                    $productSpent = ($transaction->product->price ?? 0) * $transaction->quantity;
+                    $totalSpent += $productSpent;
+                    $transactionCount++;
+                    Log::info('User ID: ' . $userId . ' Product ID: ' . $transaction->product_id . ' Spent: ' . $productSpent);
+                }
+            }
 
             if ($totalSpent > 0) {
-                $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['total_customers_with_transactions'] += 1;
-                $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['spent'] += $totalSpent;
-                $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['total_transactions'] += ($serviceTransactions->count() + $productTransactions->count());
-                Log::info('User ID: ' . $user->id . ' Total Spent: ' . $totalSpent);
+                $entry['total_customers_with_transactions'] += 1;
+                $entry['spent'] += $totalSpent;
+                $entry['total_transactions'] += $transactionCount;
+                Log::info('User ID: ' . $userId . ' Total Spent: ' . $totalSpent);
             }
         }
 
-        // Flatten the nested array into a single array
+        // Flatten the nested array
         $responseData = [];
         foreach ($dataByLocationAndWeek as $location => $weeks) {
             foreach ($weeks as $weekData) {
@@ -519,7 +529,6 @@ class AuthController extends Controller
         $total = count($responseData);
         $paginatedData = array_slice($responseData, $offset, $limit);
 
-        // Return JSON response with pagination
         return response()->json([
             'data' => $paginatedData,
             'pagination' => [
