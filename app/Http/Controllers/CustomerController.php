@@ -7,6 +7,7 @@ use App\Models\ProductTransaction;
 use App\Models\Service;
 use App\Models\ServiceTransaction;
 use App\Models\User;
+use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -340,6 +341,141 @@ class CustomerController extends Controller
                 'limit' => $limit,
                 'offset' => $offset,
                 'has_more' => ($offset + count($usersWithProfiles)) < $total
+            ]
+        ]);
+    }
+    /**
+     * Get customers with transaction data within a date range using page-based pagination
+     *
+     * @OA\Post(
+     *     path="/api/customers/date-range",
+     *     summary="Get customers with transaction data within a date range using page-based pagination",
+     *     tags={"Customers"},
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="start_date", type="string", format="date", example="2024-01-01", description="Start date for transaction filtering (YYYY-MM-DD)"),
+     *             @OA\Property(property="end_date", type="string", format="date", example="2024-01-07", description="End date for transaction filtering (YYYY-MM-DD)"),
+     *             @OA\Property(property="page", type="integer", example=1, default=1, description="Page number"),
+     *             @OA\Property(property="per_page", type="integer", example=15, default=15, description="Number of items per page")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="user", type="object",
+     *                         @OA\Property(property="id", type="integer"),
+     *                         @OA\Property(property="name", type="string"),
+     *                         @OA\Property(property="email", type="string"),
+     *                         @OA\Property(property="role", type="string", example="customer")
+     *                     ),
+     *                     @OA\Property(property="profile", type="object",
+     *                         @OA\Property(property="id", type="integer"),
+     *                         @OA\Property(property="user_id", type="integer"),
+     *                         @OA\Property(property="firstName", type="string", nullable=true),
+     *                         @OA\Property(property="lastName", type="string", nullable=true),
+     *                         @OA\Property(property="phone_number", type="string", nullable=true),
+     *                         additionalProperties=true
+     *                     ),
+     *                     @OA\Property(property="total_used_minutes", type="number"),
+     *                     @OA\Property(property="total_service_purchased_price", type="number"),
+     *                     @OA\Property(property="total_product_purchased_price", type="number"),
+     *                     @OA\Property(property="total_price", type="number")
+     *                 )
+     *             ),
+     *             @OA\Property(property="pagination", type="object",
+     *                 @OA\Property(property="total", type="integer"),
+     *                 @OA\Property(property="per_page", type="integer"),
+     *                 @OA\Property(property="current_page", type="integer"),
+     *                 @OA\Property(property="last_page", type="integer"),
+     *                 @OA\Property(property="from", type="integer"),
+     *                 @OA\Property(property="to", type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid parameters",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Invalid date format")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Internal Server Error")
+     *         )
+     *     )
+     * )
+     */
+    public function customerDateRange(Request $request)
+    {
+        // Retrieve filter parameters
+        try {
+            $startDate = $request->input('start_date') ? new DateTime($request->input('start_date')) : now()->startOfWeek();
+            $endDate = $request->input('end_date') ? new DateTime($request->input('end_date')) : now()->endOfWeek();
+            $endDate->modify('+1 day'); // Include end date
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Invalid date format'], 400);
+        }
+
+        $perPage = $request->input('per_page', 15);
+        $page = $request->input('page', 1);
+        $offset = ($page - 1) * $perPage;
+
+        $query = User::where('role', 'customer')->orderBy('id');
+        $total = $query->count();
+        $users = $query->skip($offset)->take($perPage)->get();
+
+        $usersWithProfiles = [];
+
+        foreach ($users as $user) {
+            $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
+            $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
+                ->where('type', 'used')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->sum('quantity');
+
+            $totalServicePurchasedPrice = ServiceTransaction::where('user_id', $user->id)
+                ->where('type', 'purchased')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->get()
+                ->sum(function ($transaction) {
+                    $service = Service::find($transaction->service_id);
+                    return $service ? $service->price : 0;
+                });
+
+            $totalProductPurchasedPrice = ProductTransaction::where('user_id', $user->id)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->get()
+                ->sum(function ($transaction) {
+                    $product = Product::find($transaction->product_id);
+                    return $product ? $transaction->quantity * $product->price : 0;
+                });
+
+            $usersWithProfiles[] = [
+                'user' => $user,
+                'profile' => $profile,
+                'total_used_minutes' => $totalUsedMinutes,
+                'total_service_purchased_price' => $totalServicePurchasedPrice,
+                'total_product_purchased_price' => $totalProductPurchasedPrice,
+                'total_price' => $totalServicePurchasedPrice + $totalProductPurchasedPrice
+            ];
+        }
+
+        return response()->json([
+            'data' => $usersWithProfiles,
+            'pagination' => [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'last_page' => ceil($total / $perPage),
+                'from' => $offset + 1,
+                'to' => $offset + count($usersWithProfiles)
             ]
         ]);
     }

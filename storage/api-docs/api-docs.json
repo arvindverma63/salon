@@ -980,6 +980,183 @@
                 }
             }
         },
+        "/api/customers/date-range": {
+            "post": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Get customers with transaction data within a date range using page-based pagination",
+                "description": "Get customers with transaction data within a date range using page-based pagination",
+                "operationId": "961be3ee481af80f0a600cc59eb90465",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "start_date": {
+                                        "description": "Start date for transaction filtering (YYYY-MM-DD)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-01"
+                                    },
+                                    "end_date": {
+                                        "description": "End date for transaction filtering (YYYY-MM-DD)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-07"
+                                    },
+                                    "page": {
+                                        "description": "Page number",
+                                        "type": "integer",
+                                        "default": 1,
+                                        "example": 1
+                                    },
+                                    "per_page": {
+                                        "description": "Number of items per page",
+                                        "type": "integer",
+                                        "default": 15,
+                                        "example": 15
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "user": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "email": {
+                                                                "type": "string"
+                                                            },
+                                                            "role": {
+                                                                "type": "string",
+                                                                "example": "customer"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "profile": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "user_id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "firstName": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "lastName": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "phone_number": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "additionalProperties": true
+                                                    },
+                                                    "total_used_minutes": {
+                                                        "type": "number"
+                                                    },
+                                                    "total_service_purchased_price": {
+                                                        "type": "number"
+                                                    },
+                                                    "total_product_purchased_price": {
+                                                        "type": "number"
+                                                    },
+                                                    "total_price": {
+                                                        "type": "number"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid date format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Internal Server Error"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/locations": {
             "get": {
                 "tags": [
