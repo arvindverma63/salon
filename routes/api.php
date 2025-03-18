@@ -127,6 +127,4 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/UsedMin/{id}',[ServiceTransactionController::class,'minuteUsed']);
     Route::get('/UsedMin',[ServiceTransactionController::class,'minuteUsed']);
 
-
-
 });
