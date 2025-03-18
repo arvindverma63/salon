@@ -1,0 +1,1911 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "User Profile API",
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register a new user",
+                "description": "Register a new user and send an email verification link",
+                "operationId": "8a56853624e025573120a09a4c75d468",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "johndoe@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "password123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "password123"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "example": "customer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Registration successful, please verify your email."
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login user",
+                "description": "Login a user and return the JWT token",
+                "operationId": "a3b306d14572d1f4bd6c064b3233e7b8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "example": "johndoe@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Email not verified"
+                    }
+                }
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout user",
+                "description": "Invalidate the JWT token and log out the user",
+                "operationId": "fe8f3429cd6979b3b4517e186505f9f9",
+                "responses": {
+                    "200": {
+                        "description": "Successfully logged out"
+                    }
+                }
+            }
+        },
+        "/api/me": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get authenticated user",
+                "description": "Retrieve details of the authenticated user",
+                "operationId": "3fc3f2f762fb3c5ecf211fcb0d4f81ff",
+                "responses": {
+                    "200": {
+                        "description": "User details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh JWT token",
+                "description": "Refresh and return a new JWT token",
+                "operationId": "2c27d311a2876560fcb5a754b556cdc5",
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/password/forgot": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Request a password reset link",
+                "operationId": "a1774338cf951b18aa7b7be88cdf027a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password reset link sent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password reset link has been sent to your email."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Validation failed."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/password/reset": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset the user's password",
+                "operationId": "5f9daa4e2d9a09acda465d6b8455a1cd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "random-token"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "newpassword"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "newpassword"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password has been reset successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password has been reset successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Validation failed."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid token."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/locations": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get list of all locations",
+                "description": "Retrieve a list of all locations.",
+                "operationId": "c22aa1cae7ab2b2ad315141d06fec369",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Create a new location",
+                "description": "Store a new location in the database.",
+                "operationId": "055665bfbdc18cab3dc956925a9000b4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Main Office"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "123 Main St"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "example": "Anytown"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "example": "123-456-7890"
+                                    },
+                                    "post_code": {
+                                        "type": "string",
+                                        "example": "12345"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Location created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/locations/{id}": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get a specific location",
+                "description": "Retrieve the details of a specific location.",
+                "operationId": "bcaac2b6f85e83cdc99139be535c66e6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the location to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Location details"
+                    },
+                    "404": {
+                        "description": "Location not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Update an existing location",
+                "description": "Update the details of an existing location.",
+                "operationId": "3ac5d4120b6fb23f55f179649493a2d8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the location to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Main Office"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "123 Main St"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "example": "Anytown"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "example": "123-456-7890"
+                                    },
+                                    "post_code": {
+                                        "type": "string",
+                                        "example": "12345"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Location updated successfully"
+                    },
+                    "404": {
+                        "description": "Location not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Delete a specific location",
+                "description": "Permanently delete a location from the database.",
+                "operationId": "721591ee086203214e6eb54f25625656",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the location to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Location deleted successfully"
+                    },
+                    "404": {
+                        "description": "Location not found"
+                    }
+                }
+            }
+        },
+        "/api/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get all products",
+                "description": "Retrieve a list of all products",
+                "operationId": "1bfaa78d1c2c3848ab8165c5dadcad3e",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Product"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Products not found"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Create a new product",
+                "description": "Create a new product with provided details, including an image upload",
+                "operationId": "e8185e307706e2cd84bbcf5171e2f09d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "price",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Laptop"
+                                    },
+                                    "brand": {
+                                        "type": "string",
+                                        "example": "Dell"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "A lightweight laptop"
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": "999.99"
+                                    },
+                                    "image": {
+                                        "description": "Image file to upload",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "Product"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Product created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product created successfully"
+                                        },
+                                        "product": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Laptop"
+                                                },
+                                                "brand": {
+                                                    "type": "string",
+                                                    "example": "Dell"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "A lightweight laptop"
+                                                },
+                                                "price": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": "999.99"
+                                                },
+                                                "image": {
+                                                    "type": "string",
+                                                    "example": "products/laptop.jpg"
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "example": "Product"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid input"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/products/{id}": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get a product by ID",
+                "description": "Retrieve the details of a specific product by ID",
+                "operationId": "7ab21ddb713501f3d4c2914892c02a21",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Product"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Update a product",
+                "description": "Update the details of an existing product",
+                "operationId": "6a7e11900844cd85cff66e662b82bd4c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Laptop"
+                                    },
+                                    "brand": {
+                                        "type": "string",
+                                        "example": "Dell"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "A lightweight laptop"
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": "999.99"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "Product"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Product updated successfully"
+                    },
+                    "404": {
+                        "description": "Product not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Delete a product",
+                "description": "Permanently delete a product by ID",
+                "operationId": "e80a6ca46716acee6b47ea1ac91663c0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product deleted successfully"
+                    },
+                    "404": {
+                        "description": "Product not found"
+                    }
+                }
+            }
+        },
+        "/api/product-transactions": {
+            "get": {
+                "tags": [
+                    "ProductTransactions"
+                ],
+                "summary": "Get all product transactions",
+                "description": "Retrieve a list of all product transactions.",
+                "operationId": "ecf7506292838b0a361c7d1294bbb9c3",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "ProductTransactions"
+                ],
+                "summary": "Create a new product transaction",
+                "description": "Store a new product transaction.",
+                "operationId": "2fed2d241f4f4488560c49a903cf8952",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "Store A"
+                                    },
+                                    "product": {
+                                        "type": "string",
+                                        "example": "Product 1"
+                                    },
+                                    "quantity": {
+                                        "type": "integer",
+                                        "example": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Product transaction created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/product-transactions/{id}": {
+            "get": {
+                "tags": [
+                    "ProductTransactions"
+                ],
+                "summary": "Get a specific product transaction",
+                "description": "Retrieve details of a specific product transaction.",
+                "operationId": "3a322c80b7a18df180abb4caf3fdbee4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the product transaction",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product transaction details"
+                    },
+                    "404": {
+                        "description": "Product transaction not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "ProductTransactions"
+                ],
+                "summary": "Update an existing product transaction",
+                "description": "Update a product transaction's details.",
+                "operationId": "5a735a7930fe5b4adf2a593f4c29fa90",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the product transaction",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "Store B"
+                                    },
+                                    "product": {
+                                        "type": "string",
+                                        "example": "Product 2"
+                                    },
+                                    "quantity": {
+                                        "type": "integer",
+                                        "example": 10
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Product transaction updated successfully"
+                    },
+                    "404": {
+                        "description": "Product transaction not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "ProductTransactions"
+                ],
+                "summary": "Delete a specific product transaction",
+                "description": "Permanently delete a product transaction.",
+                "operationId": "eb9ad258e5855732ed3772a72a5f25e4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the product transaction",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product transaction deleted successfully"
+                    },
+                    "404": {
+                        "description": "Product transaction not found"
+                    }
+                }
+            }
+        },
+        "/api/service-transactions": {
+            "get": {
+                "tags": [
+                    "Service Transactions"
+                ],
+                "summary": "Get all service transactions",
+                "description": "Retrieve a list of all service transactions.",
+                "operationId": "2ef3cb2de793e76702064a36d46bbb91",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Service Transactions"
+                ],
+                "summary": "Create a new service transaction",
+                "description": "Store a new service transaction in the database.",
+                "operationId": "b624145d68d22abb9366f44dc21809c8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "example": "123"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "example": "2"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "purchase"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "New York"
+                                    },
+                                    "service": {
+                                        "type": "string",
+                                        "example": "Haircut"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Service transaction created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/service-transactions/{id}": {
+            "get": {
+                "tags": [
+                    "Service Transactions"
+                ],
+                "summary": "Get a specific service transaction",
+                "description": "Retrieve the details of a specific service transaction.",
+                "operationId": "52b16c1e6c0af9913d65398036e74eb6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service transaction",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service transaction details"
+                    },
+                    "404": {
+                        "description": "Service transaction not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Service Transactions"
+                ],
+                "summary": "Update a service transaction",
+                "description": "Update a service transaction in the database.",
+                "operationId": "8462724134f9bdabd7c95a88464f62d3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service transaction",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "quantity": {
+                                        "type": "string",
+                                        "example": "2"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "purchase"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "New York"
+                                    },
+                                    "service": {
+                                        "type": "string",
+                                        "example": "Haircut"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Service transaction updated successfully"
+                    },
+                    "404": {
+                        "description": "Service transaction not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Service Transactions"
+                ],
+                "summary": "Delete a service transaction",
+                "description": "Delete a service transaction from the database.",
+                "operationId": "7ff399c47c3b7249d0e2ddeabb79961f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service transaction",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service transaction deleted successfully"
+                    },
+                    "404": {
+                        "description": "Service transaction not found"
+                    }
+                }
+            }
+        },
+        "/api/total-spend/{userId}": {
+            "post": {
+                "tags": [
+                    "Service Transactions"
+                ],
+                "summary": "Calculate total spend after last purchase",
+                "description": "Get the total quantity spent by the user after their last purchase date and update the total_spend field in the user profile.",
+                "operationId": "96cb674af98bdffd417f0324aaa0f120",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "The ID of the user",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {}
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Total spend updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Total spend updated successfully"
+                                        },
+                                        "total_spend": {
+                                            "type": "integer",
+                                            "example": 10
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User profile or purchase transaction not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No purchase transactions found for this user."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/service-usages": {
+            "get": {
+                "tags": [
+                    "Service Usages"
+                ],
+                "summary": "Get list of all service usages",
+                "description": "Retrieve a list of all service usages.",
+                "operationId": "4b8df32693ddd66cf96bc5a3a3da1aae",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Service Usages"
+                ],
+                "summary": "Create a new service usage",
+                "description": "Store a new service usage in the database.",
+                "operationId": "4e1d85baaace028a59f07692c5c99208",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "example": "1"
+                                    },
+                                    "ava_balance": {
+                                        "type": "string",
+                                        "example": "100"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Service usage created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/service-usages/{id}": {
+            "get": {
+                "tags": [
+                    "Service Usages"
+                ],
+                "summary": "Get a specific service usage",
+                "description": "Retrieve the details of a specific service usage.",
+                "operationId": "34c5b1ae0a520a852f8a93100c357b46",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service usage to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service usage details"
+                    },
+                    "404": {
+                        "description": "Service usage not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Service Usages"
+                ],
+                "summary": "Update an existing service usage",
+                "description": "Update the details of an existing service usage.",
+                "operationId": "b7b2ed2aaaed68f9295ab0d34e23ee29",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service usage to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "example": "1"
+                                    },
+                                    "ava_balance": {
+                                        "type": "string",
+                                        "example": "100"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Service usage updated successfully"
+                    },
+                    "404": {
+                        "description": "Service usage not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Service Usages"
+                ],
+                "summary": "Delete a specific service usage",
+                "description": "Permanently delete a service usage from the database.",
+                "operationId": "6f10bebd7715b4ca9230d152a46bf6cd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service usage to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service usage deleted successfully"
+                    },
+                    "404": {
+                        "description": "Service usage not found"
+                    }
+                }
+            }
+        },
+        "/api/services": {
+            "get": {
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Get list of all services",
+                "description": "Retrieve a list of all services.",
+                "operationId": "b2cc16bd5971e5680a4dd46c9c383f65",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Create a new service",
+                "description": "Store a new service in the database.",
+                "operationId": "806d2b381734b9494d468322434ba121",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "service_name": {
+                                        "type": "string",
+                                        "example": "Haircut"
+                                    },
+                                    "minutesAvailable": {
+                                        "type": "string",
+                                        "example": "30"
+                                    },
+                                    "price": {
+                                        "type": "integer",
+                                        "example": 20
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Service created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/services/{id}": {
+            "get": {
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Get a specific service",
+                "description": "Retrieve the details of a specific service.",
+                "operationId": "6b8504a5f57dba118512a83b265e6040",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service details"
+                    },
+                    "404": {
+                        "description": "Service not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Update an existing service",
+                "description": "Update the details of an existing service.",
+                "operationId": "a077666135d725a905538f3f05b4039c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "service_name": {
+                                        "type": "string",
+                                        "example": "Haircut"
+                                    },
+                                    "minutesAvailable": {
+                                        "type": "string",
+                                        "example": "30"
+                                    },
+                                    "price": {
+                                        "type": "integer",
+                                        "example": 20
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Service updated successfully"
+                    },
+                    "404": {
+                        "description": "Service not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Delete a specific service",
+                "description": "Permanently delete a service from the database.",
+                "operationId": "66aaf62153671736305fd4cdd76702fc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the service to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service deleted successfully"
+                    },
+                    "404": {
+                        "description": "Service not found"
+                    }
+                }
+            }
+        },
+        "/api/user-profiles": {
+            "get": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Get all user profiles",
+                "operationId": "8e24f07c7e22849fef609b792da9e058",
+                "responses": {
+                    "200": {
+                        "description": "A list of user profiles"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Create a new user profile",
+                "operationId": "6a36e7ba5213abe5e7517bd5ef1d2b2b",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "user_id",
+                                    "email",
+                                    "phone_number",
+                                    "firstName",
+                                    "lastName",
+                                    "gender"
+                                ],
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "firstName": {
+                                        "type": "string"
+                                    },
+                                    "lastName": {
+                                        "type": "string"
+                                    },
+                                    "gender": {
+                                        "type": "string"
+                                    },
+                                    "gdpr_sms_active": {
+                                        "type": "boolean"
+                                    },
+                                    "gdpr_email_active": {
+                                        "type": "boolean"
+                                    },
+                                    "referred_by": {
+                                        "type": "string"
+                                    },
+                                    "preferred_location": {
+                                        "type": "integer"
+                                    },
+                                    "avatar": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User profile created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "user_id": {
+                                            "type": "integer"
+                                        },
+                                        "email": {
+                                            "type": "string"
+                                        },
+                                        "phone_number": {
+                                            "type": "string"
+                                        },
+                                        "firstName": {
+                                            "type": "string"
+                                        },
+                                        "lastName": {
+                                            "type": "string"
+                                        },
+                                        "gender": {
+                                            "type": "string"
+                                        },
+                                        "gdpr_sms_active": {
+                                            "type": "boolean"
+                                        },
+                                        "gdpr_email_active": {
+                                            "type": "boolean"
+                                        },
+                                        "referred_by": {
+                                            "type": "string"
+                                        },
+                                        "preferred_location": {
+                                            "type": "integer"
+                                        },
+                                        "avatar": {
+                                            "type": "string"
+                                        },
+                                        "address": {
+                                            "type": "string"
+                                        },
+                                        "active": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user-profiles/{id}": {
+            "get": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Get a single user profile",
+                "operationId": "658d6f878dd67b7351bdf96322c410be",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile details"
+                    },
+                    "404": {
+                        "description": "User profile not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Update a user profile",
+                "operationId": "5ca0c7d4a627a2b06c1d5f0c8fed28ec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "user_id": {
+                                        "type": "integer"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "firstName": {
+                                        "type": "string"
+                                    },
+                                    "lastName": {
+                                        "type": "string"
+                                    },
+                                    "gender": {
+                                        "type": "string"
+                                    },
+                                    "gdpr_sms_active": {
+                                        "type": "boolean"
+                                    },
+                                    "gdpr_email_active": {
+                                        "type": "boolean"
+                                    },
+                                    "referred_by": {
+                                        "type": "string"
+                                    },
+                                    "preferred_location": {
+                                        "type": "integer"
+                                    },
+                                    "avatar": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User profile updated successfully"
+                    },
+                    "404": {
+                        "description": "User profile not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Delete a user profile",
+                "operationId": "43176af0153a5990af1e87fa66bd624d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile deleted successfully"
+                    },
+                    "404": {
+                        "description": "User profile not found"
+                    }
+                }
+            }
+        },
+        "/users/{id}/restore": {
+            "patch": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Restore a soft-deleted user",
+                "description": "Restores a previously soft-deleted user by their ID.",
+                "operationId": "c1ffa68de7f6e48ad68c82831fa050d4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the user to restore",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User restored successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "User not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Product": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Laptop"
+                    },
+                    "brand": {
+                        "type": "string",
+                        "example": "Dell"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "A lightweight laptop"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 999.99
+                    },
+                    "image": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "http://example.com/image.jpg"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "Product"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Auth"
+        },
+        {
+            "name": "Locations",
+            "description": "Locations"
+        },
+        {
+            "name": "Products",
+            "description": "Products"
+        },
+        {
+            "name": "ProductTransactions",
+            "description": "ProductTransactions"
+        },
+        {
+            "name": "Service Transactions",
+            "description": "Service Transactions"
+        },
+        {
+            "name": "Service Usages",
+            "description": "Service Usages"
+        },
+        {
+            "name": "Services",
+            "description": "Services"
+        },
+        {
+            "name": "User Profiles",
+            "description": "User Profiles"
+        },
+        {
+            "name": "Users",
+            "description": "Users"
+        }
+    ]
+}
