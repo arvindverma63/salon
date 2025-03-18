@@ -19,6 +19,7 @@ use App\Models\ProductTransaction;
 use App\Models\Product;
 use Illuminate\Support\Facades\Password;
 use DateTime;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -540,9 +541,14 @@ class AuthController extends Controller
      *     )
      * )
      */
-    public function getUser()
+    public function getUser(Request $request)
     {
-        $users = User::paginate(15);
+        $limit = $request->input('limit', 15);
+        $offset = $request->input('offset', 0);
+
+        $query = User::whereNot('role', 'customer');
+        $total = $query->count();
+        $users = $query->skip($offset)->take($limit)->get();
 
         $usersWithProfiles = [];
 
@@ -580,14 +586,10 @@ class AuthController extends Controller
         return response()->json([
             'data' => $usersWithProfiles,
             'pagination' => [
-                'total' => $users->total(),
-                'per_page' => $users->perPage(),
-                'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'from' => $users->firstItem(),
-                'to' => $users->lastItem(),
-                'next_page_url' => $users->nextPageUrl(),
-                'prev_page_url' => $users->previousPageUrl()
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+                'has_more' => ($offset + count($usersWithProfiles)) < $total
             ]
         ]);
     }
