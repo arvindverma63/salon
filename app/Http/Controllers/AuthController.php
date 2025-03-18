@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\VerifyEmail;
+use App\Models\Location;
 use App\Models\User_profile;
 use App\Models\Service;
 use App\Models\ServiceTransaction;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Password;
 use DateTime;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\FacadesLog;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 
 class AuthController extends Controller
 {
@@ -143,6 +145,13 @@ class AuthController extends Controller
         // if (!$user->hasVerifiedEmail()) {
         //     return response()->json(['error' => 'Email not verified'], 403);
         // }
+
+        // $profile = User_profile::where('user_id',$user->id)->first();
+        // $location = Location::find($profile->preferred_location);
+        // $data = [
+        //     'location'
+        // ]
+
 
         return $this->respondWithToken($token);
     }
