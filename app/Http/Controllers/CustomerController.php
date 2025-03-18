@@ -243,6 +243,7 @@ class CustomerController extends Controller
 
          // Apply location filter with key search
          if ($request->has('locationId')) {
+             if ($request->input('locationId') != null && $request->input('locationId') != '0') {
                  $hasValidFilter = true;
                  $key = '%' . $request->input('key') . '%';
                  $profileQuery->where('preferred_location', $request->input('locationId'))
@@ -251,6 +252,7 @@ class CustomerController extends Controller
                              ->orWhere('lastName', 'like', $key)
                              ->orWhere('phone_number', 'like', $key);
                      });
+             }
          } else {
              // Apply single key search across multiple profile fields
              if ($request->has('key') && $request->input('key') !== '') {
