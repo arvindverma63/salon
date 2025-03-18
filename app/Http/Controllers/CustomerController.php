@@ -20,17 +20,17 @@ class CustomerController extends Controller
      *     path="/api/customers",
      *     summary="Get list of customers with their transaction data using offset pagination",
      *     tags={"Customers"},
-     *     @OA\Parameter(
-     *         name="offset",
+      *     @OA\Parameter(
+     *         name="page",
      *         in="query",
-     *         description="Number of items to skip",
+     *         description="Page number",
      *         required=false,
-     *         @OA\Schema(type="integer", default=0)
+     *         @OA\Schema(type="integer", default=1)
      *     ),
      *     @OA\Parameter(
-     *         name="limit",
+     *         name="per_page",
      *         in="query",
-     *         description="Number of items to return",
+     *         description="Number of items per page",
      *         required=false,
      *         @OA\Schema(type="integer", default=15)
      *     ),
@@ -86,13 +86,12 @@ class CustomerController extends Controller
      */
     public function getAllCustomers(Request $request)
     {
-        $limit = $request->input('limit', 15);
-        $offset = $request->input('offset', 0);
+        $limit = $request->input('per_page', 15);
+        $offset = $request->input('page', 0);
 
         $query = User::where('role', 'customer');
         $total = $query->count();
-        $users = $query->skip($offset)->take($limit)->get();
-        Log::info("users count : ",[$users]);
+        $users = $query->offset($offset)->take($limit)->get();
 
         $usersWithProfiles = [];
 

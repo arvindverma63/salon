@@ -446,19 +446,19 @@
                 "operationId": "b914c156fbb859b98e09cd86f44f3cbf",
                 "parameters": [
                     {
-                        "name": "offset",
+                        "name": "page",
                         "in": "query",
-                        "description": "Number of items to skip",
+                        "description": "Page number",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": 0
+                            "default": 1
                         }
                     },
                     {
-                        "name": "limit",
+                        "name": "per_page",
                         "in": "query",
-                        "description": "Number of items to return",
+                        "description": "Number of items per page",
                         "required": false,
                         "schema": {
                             "type": "integer",

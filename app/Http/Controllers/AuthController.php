@@ -543,13 +543,14 @@ class AuthController extends Controller
      */
     public function getUser(Request $request)
     {
-        $limit = $request->input('limit', 15);
-        $offset = $request->input('offset', 0);
+        $limit = $request->input('per_page', 15);
+        $offset = $request->input('page', 0);
 
         $query = User::whereNot('role', 'customer');
         $total = $query->count();
-        $users = $query->skip($offset)->take($limit)->get();
+        $users = $query->offset($offset)->take($limit)->get();
 
+        Log::info("total get users : ",[$users]);
         $usersWithProfiles = [];
 
         foreach ($users as $user) {
