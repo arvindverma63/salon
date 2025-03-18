@@ -242,7 +242,7 @@ class CustomerController extends Controller
                  $hasValidFilter = true;
                  if ($request->has('key') && $request->input('key') !== '') {
                      $key = '%' . $request->input('key') . '%';
-                     $profileQuery->where('preferred_location', $request->input('locationId'))
+                     $profileQuery->where('preferred_location', $request->input('locationId') ? $request->input('locationId'):null)
                          ->where(function ($q) use ($key) {
                              $q->where('firstName', 'like', $key)
                                  ->orWhere('lastName', 'like', $key)
