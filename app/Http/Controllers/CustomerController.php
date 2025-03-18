@@ -234,14 +234,13 @@ class CustomerController extends Controller
 
         // Set up profile query for filtering by profile fields
         $profileQuery = DB::table('user_profiles');
-
-        // Apply single key search across multiple profile fields
-
+        $hasValidFilter = false;
 
         // Apply location filter with optional key search
         if ($request->has('locationId')) {
             if ($request->input('locationId') != null && $request->input('locationId') != '0') {
-                $key = $request->has('key') ? '%' . $request->input('key') . '%' : '%';
+                $hasValidFilter = true;
+                $key = $request->has('key') && $request->input('key') !== '' ? '%' . $request->input('key') . '%' : '%';
                 $profileQuery->where('preferred_location', $request->input('locationId'))
                     ->where(function ($q) use ($key) {
                         $q->where('firstName', 'like', $key)
@@ -249,10 +248,11 @@ class CustomerController extends Controller
                             ->orWhere('phone_number', 'like', $key);
                     });
             }
-        }
-        else{
-            if ($request->has('key')) {
-                $key = $request->input('key') . '%';
+        } else {
+            // Apply single key search across multiple profile fields only if key is provided and not empty
+            if ($request->has('key') && $request->input('key') !== '') {
+                $hasValidFilter = true;
+                $key = '%' . $request->input('key') . '%';
                 $profileQuery->where(function ($q) use ($key) {
                     $q->where('firstName', 'like', $key)
                         ->orWhere('lastName', 'like', $key)
@@ -261,9 +261,13 @@ class CustomerController extends Controller
             }
         }
 
+        // If no valid filters are applied, return empty result
+        if (!$hasValidFilter && !$request->has('email')) {
+            return response()->json(['data' => []]);
+        }
 
         // Apply profile filters to main query if any exist
-        if ($request->hasAny(['key', 'locationId'])) {
+        if ($hasValidFilter) {
             $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
             if (empty($matchingUserIds)) {
                 return response()->json(['data' => []]);
