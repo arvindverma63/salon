@@ -20,6 +20,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Password;
 use DateTime;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\FacadesLog;
 
 class AuthController extends Controller
 {
@@ -338,7 +339,7 @@ class AuthController extends Controller
         $user->save();
 
         // Log the password reset for auditing
-        \Log::info('Password reset for user: ' . $user->email);
+        Log::info('Password reset for user: ' . $user->email);
 
         // Optionally send a notification email
         // Notification::route('mail', $user->email)->notify(new PasswordResetSuccess());
@@ -349,88 +350,138 @@ class AuthController extends Controller
 
 
 
+    /**
+     * Get customer transaction data by location and week with offset pagination
+     *
+     * @OA\Post(
+     *     path="/api/getUserd",
+     *     summary="Get customer transaction data by location and registration week with offset pagination",
+     *     tags={"Customers"},
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="start_date", type="string", format="date", example="2024-01-01", description="Start date for transaction filtering (YYYY-MM-DD)"),
+     *             @OA\Property(property="end_date", type="string", format="date", example="2024-01-07", description="End date for transaction filtering (YYYY-MM-DD)"),
+     *             @OA\Property(property="location_id", type="integer", example=1, description="Filter by specific location ID"),
+     *             @OA\Property(property="offset", type="integer", example=0, default=0, description="Number of items to skip"),
+     *             @OA\Property(property="limit", type="integer", example=15, default=15, description="Number of items to return")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="location_name", type="string", example="All"),
+     *                     @OA\Property(property="location_id", type="integer", nullable=true, example=1),
+     *                     @OA\Property(property="week_no", type="string", example="01"),
+     *                     @OA\Property(property="count", type="integer", example=0),
+     *                     @OA\Property(property="spent", type="number", example=150.75),
+     *                     @OA\Property(property="total_registered_customers", type="integer", example=10),
+     *                     @OA\Property(property="total_customers_with_transactions", type="integer", example=5),
+     *                     @OA\Property(property="total_transactions", type="integer", example=8),
+     *                     @OA\Property(property="start_date", type="string", format="date", example="2024-01-01"),
+     *                     @OA\Property(property="end_date", type="string", format="date", example="2024-01-08")
+     *                 )
+     *             ),
+     *             @OA\Property(property="pagination", type="object",
+     *                 @OA\Property(property="total", type="integer", example=50),
+     *                 @OA\Property(property="limit", type="integer", example=15),
+     *                 @OA\Property(property="offset", type="integer", example=0),
+     *                 @OA\Property(property="has_more", type="boolean", example=true)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid parameters",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Invalid date format")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Internal Server Error")
+     *         )
+     *     )
+     * )
+     */
     public function getUserd(Request $request)
     {
-        // Retrieve the filter parameters from the POST request body
-        $startDate = $request->input('start_date') ? new DateTime($request->input('start_date')) : now()->startOfWeek();
-        $endDate = $request->input('end_date') ? new DateTime($request->input('end_date')) : now()->endOfWeek();
-
-        // Add one day to the end date
-        $endDate->modify('+1 day');
+        // Retrieve filter parameters from POST body
+        try {
+            $startDate = $request->input('start_date') ? new DateTime($request->input('start_date')) : now()->startOfWeek();
+            $endDate = $request->input('end_date') ? new DateTime($request->input('end_date')) : now()->endOfWeek();
+            $endDate->modify('+1 day'); // Add one day to include the end date
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Invalid date format'], 400);
+        }
 
         $locationIdFilter = $request->input('location_id');
+        $limit = $request->input('limit', 15);
+        $offset = $request->input('offset', 0);
 
-        // Get all users with the customer role
+        // Get all users with the customer role (no pagination yet)
         $users = User::where('role', 'customer')->get();
 
-        // Initialize an empty array to store the results
+        // Initialize array to store results
         $dataByLocationAndWeek = [];
 
-        // Loop through each user to get transaction details
+        // Process each user
         foreach ($users as $user) {
-            // Retrieve the user's preferred location from user_profiles table
             $preferredLocation = DB::table('user_profiles')
                 ->where('user_id', $user->id)
                 ->value('preferred_location');
 
-            // Fetch the location ID from the locations table
             $locationId = $preferredLocation ? DB::table('locations')->where('id', $preferredLocation)->value('id') : null;
 
-            // Determine the week of registration
+            // Skip if location doesn't match filter
+            if ($locationIdFilter && $locationId != $locationIdFilter) {
+                continue;
+            }
+
             $registrationDate = $user->created_at;
             $registrationWeekNumber = (new DateTime($registrationDate))->format('W');
 
-            // Initialize total spent variable
             $totalSpent = 0;
 
-            // Calculate the spent from service transactions
+            // Service transactions
             $serviceTransactions = ServiceTransaction::where('user_id', $user->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->get();
 
-            // Debugging: Log service transactions
-            \Log::info('User ID: ' . $user->id . ' Service Transactions: ', $serviceTransactions->toArray());
+            Log::info('User ID: ' . $user->id . ' Service Transactions: ', $serviceTransactions->toArray());
 
             foreach ($serviceTransactions as $serviceTransaction) {
                 $service = Service::find($serviceTransaction->service_id);
                 $serviceSpent = $service ? $service->price : 0;
                 $totalSpent += $serviceSpent;
-
-                // Debugging: Log each service spent
-                \Log::info('Service ID: ' . $serviceTransaction->service_id . ' Spent: ' . $serviceSpent);
+                Log::info('Service ID: ' . $serviceTransaction->service_id . ' Spent: ' . $serviceSpent);
             }
 
-            // Calculate the spent from product transactions
+            // Product transactions
             $productTransactions = ProductTransaction::where('user_id', $user->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->get();
 
-            // Debugging: Log product transactions
-            \Log::info('User ID: ' . $user->id . ' Product Transactions: ', $productTransactions->toArray());
+            Log::info('User ID: ' . $user->id . ' Product Transactions: ', $productTransactions->toArray());
 
             foreach ($productTransactions as $productTransaction) {
                 $product = Product::find($productTransaction->product_id);
-                // Accumulate the total spent considering the quantity of products bought
                 $productSpent = $product ? $product->price * $productTransaction->quantity : 0;
                 $totalSpent += $productSpent;
-
-                // Debugging: Log each product spent
-                \Log::info('Product ID: ' . $productTransaction->product_id . ' Spent: ' . $productSpent);
+                Log::info('Product ID: ' . $productTransaction->product_id . ' Spent: ' . $productSpent);
             }
 
-            // Skip the user if the location doesn't match the filter
-            if ($locationIdFilter && $locationId != $locationIdFilter) {
-                continue;
-            }
-
-            // Get the location name from the locations table
             $locationName = 'All';
             if ($locationId) {
                 $location = DB::table('locations')->find($locationId);
                 $locationName = $location ? $location->name : 'All';
             }
 
-            // Check if this location and week are already initialized in the array
             if (!isset($dataByLocationAndWeek[$locationName][$registrationWeekNumber])) {
                 $dataByLocationAndWeek[$locationName][$registrationWeekNumber] = [
                     'location_name' => $locationName,
@@ -442,27 +493,21 @@ class AuthController extends Controller
                     'total_customers_with_transactions' => 0,
                     'total_transactions' => 0,
                     'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'), // Automatically modified end date
+                    'end_date' => $endDate->format('Y-m-d'),
                 ];
             }
 
-            // Increment the count of total registered customers for this location and week
             $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['total_registered_customers'] += 1;
 
-            // Only include users with transactions
             if ($totalSpent > 0) {
                 $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['total_customers_with_transactions'] += 1;
-
-                // Add total spent to the corresponding location and week
                 $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['spent'] += $totalSpent;
-                $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['total_transactions'] += 1;
-
-                // Debugging: Log total spent
-                \Log::info('User ID: ' . $user->id . ' Total Spent: ' . $totalSpent);
+                $dataByLocationAndWeek[$locationName][$registrationWeekNumber]['total_transactions'] += ($serviceTransactions->count() + $productTransactions->count());
+                Log::info('User ID: ' . $user->id . ' Total Spent: ' . $totalSpent);
             }
         }
 
-        // Prepare the response data
+        // Flatten the nested array into a single array
         $responseData = [];
         foreach ($dataByLocationAndWeek as $location => $weeks) {
             foreach ($weeks as $weekData) {
@@ -470,14 +515,26 @@ class AuthController extends Controller
             }
         }
 
-        // Return the data as a JSON response
-        return response()->json(['data' => $responseData]);
+        // Apply offset and limit
+        $total = count($responseData);
+        $paginatedData = array_slice($responseData, $offset, $limit);
+
+        // Return JSON response with pagination
+        return response()->json([
+            'data' => $paginatedData,
+            'pagination' => [
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+                'has_more' => ($offset + count($paginatedData)) < $total
+            ]
+        ]);
     }
 
 
 
 
-/**
+    /**
      * Get paginated list of users with their profiles and transaction totals
      *
      * @OA\Get(
@@ -550,7 +607,7 @@ class AuthController extends Controller
         $total = $query->count();
         $users = $query->offset($offset)->take($limit)->get();
 
-        Log::info("total get users : ",[$users]);
+        Log::info("total get users : ", [$users]);
         $usersWithProfiles = [];
 
         foreach ($users as $user) {
@@ -670,7 +727,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            \Log::error('User registration failed', ['error' => $e->getMessage()]);
+            Log::error('User registration failed', ['error' => $e->getMessage()]);
 
             return response()->json([
                 'errors' => 'Registration failed. Please try again later.'

@@ -310,6 +310,175 @@
                 }
             }
         },
+        "/api/getUserd": {
+            "post": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Get customer transaction data by location and registration week with offset pagination",
+                "description": "Get customer transaction data by location and week with offset pagination",
+                "operationId": "1b4b22b0188313285975fd0cd51c761c",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "start_date": {
+                                        "description": "Start date for transaction filtering (YYYY-MM-DD)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-01"
+                                    },
+                                    "end_date": {
+                                        "description": "End date for transaction filtering (YYYY-MM-DD)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-07"
+                                    },
+                                    "location_id": {
+                                        "description": "Filter by specific location ID",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "offset": {
+                                        "description": "Number of items to skip",
+                                        "type": "integer",
+                                        "default": 0,
+                                        "example": 0
+                                    },
+                                    "limit": {
+                                        "description": "Number of items to return",
+                                        "type": "integer",
+                                        "default": 15,
+                                        "example": 15
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "location_name": {
+                                                        "type": "string",
+                                                        "example": "All"
+                                                    },
+                                                    "location_id": {
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    },
+                                                    "week_no": {
+                                                        "type": "string",
+                                                        "example": "01"
+                                                    },
+                                                    "count": {
+                                                        "type": "integer",
+                                                        "example": 0
+                                                    },
+                                                    "spent": {
+                                                        "type": "number",
+                                                        "example": 150.75
+                                                    },
+                                                    "total_registered_customers": {
+                                                        "type": "integer",
+                                                        "example": 10
+                                                    },
+                                                    "total_customers_with_transactions": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "total_transactions": {
+                                                        "type": "integer",
+                                                        "example": 8
+                                                    },
+                                                    "start_date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "example": "2024-01-01"
+                                                    },
+                                                    "end_date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "example": "2024-01-08"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 50
+                                                },
+                                                "limit": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "offset": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "has_more": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid date format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Internal Server Error"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/getUser": {
             "get": {
                 "tags": [
@@ -2160,12 +2329,12 @@
             "description": "Auth"
         },
         {
-            "name": "Users",
-            "description": "Users"
-        },
-        {
             "name": "Customers",
             "description": "Customers"
+        },
+        {
+            "name": "Users",
+            "description": "Users"
         },
         {
             "name": "Locations",
