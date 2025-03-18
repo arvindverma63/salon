@@ -13,23 +13,23 @@ use Illuminate\Support\Facades\DB;
 class CustomerController extends Controller
 {
     /**
-     * Get paginated list of customers with their profiles and transaction totals
+     * Get list of customers with their profiles and transaction totals using offset pagination
      *
      * @OA\Get(
      *     path="/api/customers",
-     *     summary="Get paginated list of customers with their transaction data",
+     *     summary="Get list of customers with their transaction data using offset pagination",
      *     tags={"Customers"},
      *     @OA\Parameter(
-     *         name="page",
+     *         name="offset",
      *         in="query",
-     *         description="Page number",
+     *         description="Number of items to skip",
      *         required=false,
-     *         @OA\Schema(type="integer", default=1)
+     *         @OA\Schema(type="integer", default=0)
      *     ),
      *     @OA\Parameter(
-     *         name="per_page",
+     *         name="limit",
      *         in="query",
-     *         description="Number of items per page",
+     *         description="Number of items to return",
      *         required=false,
      *         @OA\Schema(type="integer", default=15)
      *     ),
@@ -61,13 +61,9 @@ class CustomerController extends Controller
      *             ),
      *             @OA\Property(property="pagination", type="object",
      *                 @OA\Property(property="total", type="integer", example=50),
-     *                 @OA\Property(property="per_page", type="integer", example=15),
-     *                 @OA\Property(property="current_page", type="integer", example=1),
-     *                 @OA\Property(property="last_page", type="integer", example=4),
-     *                 @OA\Property(property="from", type="integer", example=1),
-     *                 @OA\Property(property="to", type="integer", example=15),
-     *                 @OA\Property(property="next_page_url", type="string", nullable=true, example="http://example.com/api/customers?page=2"),
-     *                 @OA\Property(property="prev_page_url", type="string", nullable=true, example=null)
+     *                 @OA\Property(property="limit", type="integer", example=15),
+     *                 @OA\Property(property="offset", type="integer", example=0),
+     *                 @OA\Property(property="has_more", type="boolean", example=true)
      *             )
      *         )
      *     ),
@@ -89,8 +85,12 @@ class CustomerController extends Controller
      */
     public function getAllCustomers(Request $request)
     {
-        $perPage = $request->input('per_page', 15);
-        $users = User::where('role', 'customer')->paginate($perPage);
+        $limit = $request->input('limit', 15);
+        $offset = $request->input('offset', 0);
+
+        $query = User::where('role', 'customer');
+        $total = $query->count();
+        $users = $query->skip($offset)->take($limit)->get();
 
         $usersWithProfiles = [];
 
@@ -128,24 +128,20 @@ class CustomerController extends Controller
         return response()->json([
             'data' => $usersWithProfiles,
             'pagination' => [
-                'total' => $users->total(),
-                'per_page' => $users->perPage(),
-                'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'from' => $users->firstItem(),
-                'to' => $users->lastItem(),
-                'next_page_url' => $users->nextPageUrl(),
-                'prev_page_url' => $users->previousPageUrl()
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+                'has_more' => ($offset + count($usersWithProfiles)) < $total
             ]
         ]);
     }
 
     /**
-     * Search customers by various criteria including profile fields
+     * Search customers by various criteria including profile fields using offset pagination
      *
      * @OA\Get(
      *     path="/api/customers/search",
-     *     summary="Search customers with filtering options",
+     *     summary="Search customers with filtering options using offset pagination",
      *     tags={"Customers"},
      *     @OA\Parameter(
      *         name="firstName",
@@ -183,16 +179,16 @@ class CustomerController extends Controller
      *         @OA\Schema(type="number")
      *     ),
      *     @OA\Parameter(
-     *         name="page",
+     *         name="offset",
      *         in="query",
-     *         description="Page number",
+     *         description="Number of items to skip",
      *         required=false,
-     *         @OA\Schema(type="integer", default=1)
+     *         @OA\Schema(type="integer", default=0)
      *     ),
      *     @OA\Parameter(
-     *         name="per_page",
+     *         name="limit",
      *         in="query",
-     *         description="Number of items per page",
+     *         description="Number of items to return",
      *         required=false,
      *         @OA\Schema(type="integer", default=15)
      *     ),
@@ -224,13 +220,9 @@ class CustomerController extends Controller
      *             ),
      *             @OA\Property(property="pagination", type="object",
      *                 @OA\Property(property="total", type="integer"),
-     *                 @OA\Property(property="per_page", type="integer"),
-     *                 @OA\Property(property="current_page", type="integer"),
-     *                 @OA\Property(property="last_page", type="integer"),
-     *                 @OA\Property(property="from", type="integer"),
-     *                 @OA\Property(property="to", type="integer"),
-     *                 @OA\Property(property="next_page_url", type="string", nullable=true),
-     *                 @OA\Property(property="prev_page_url", type="string", nullable=true)
+     *                 @OA\Property(property="limit", type="integer"),
+     *                 @OA\Property(property="offset", type="integer"),
+     *                 @OA\Property(property="has_more", type="boolean")
      *             )
      *         )
      *     ),
@@ -278,27 +270,24 @@ class CustomerController extends Controller
         if ($request->hasAny(['firstName', 'lastName', 'phone_number'])) {
             $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
             if (empty($matchingUserIds)) {
-                // If no profiles match, return empty result
                 return response()->json([
                     'data' => [],
                     'pagination' => [
                         'total' => 0,
-                        'per_page' => $request->input('per_page', 15),
-                        'current_page' => $request->input('page', 1),
-                        'last_page' => 0,
-                        'from' => null,
-                        'to' => null,
-                        'next_page_url' => null,
-                        'prev_page_url' => null
+                        'limit' => $request->input('limit', 15),
+                        'offset' => $request->input('offset', 0),
+                        'has_more' => false
                     ]
                 ]);
             }
             $query->whereIn('id', $matchingUserIds);
         }
 
-        // Pagination
-        $perPage = $request->input('per_page', 15);
-        $users = $query->paginate($perPage);
+        // Offset-based pagination
+        $limit = $request->input('limit', 15);
+        $offset = $request->input('offset', 0);
+        $total = $query->count();
+        $users = $query->skip($offset)->take($limit)->get();
 
         $usersWithProfiles = [];
 
@@ -343,14 +332,10 @@ class CustomerController extends Controller
         return response()->json([
             'data' => $usersWithProfiles,
             'pagination' => [
-                'total' => $users->total(),
-                'per_page' => $users->perPage(),
-                'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'from' => $users->firstItem(),
-                'to' => $users->lastItem(),
-                'next_page_url' => $users->nextPageUrl(),
-                'prev_page_url' => $users->previousPageUrl()
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+                'has_more' => ($offset + count($usersWithProfiles)) < $total
             ]
         ]);
     }
