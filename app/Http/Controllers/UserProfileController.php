@@ -198,57 +198,57 @@ class UserProfileController extends Controller
      * )
      */
     public function update(Request $request, $id)
-{
-    // Fetch the user profile based on the user_id (no foreign key relationship assumed)
-    $profile = User_profile::where('user_id', $id)->first();
+    {
+        // Fetch the user profile based on the user_id (no foreign key relationship assumed)
+        $profile = User_profile::where('user_id', $id)->first();
 
-    if (!$profile) {
-        return response()->json(['error' => 'User profile not found'], 404);
+        if (!$profile) {
+            return response()->json(['error' => 'User profile not found'], 404);
+        }
+
+        // Validate the incoming request (removed email validation)
+        $validator = Validator::make($request->all(), [
+            'phone_number' => 'nullable',
+            'firstName' => 'nullable|string',
+            'lastName' => 'nullable|string',
+            'gender' => 'nullable|string',
+            'gdpr_sms_active' => 'boolean',
+            'gdpr_email_active' => 'boolean',
+            'referred_by' => 'nullable|string',
+            'preferred_location' => 'nullable|integer',
+            'avatar' => 'nullable|string',
+            'active' => 'boolean',
+            'available_balance' => 'nullable|integer',
+            'role' => 'nullable|string',
+            'dob' => 'nullable|string',
+        ]);
+
+        // Check for validation errors
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        // Update the email if provided (without checking for duplicates)
+        if ($request->has('email')) {
+            User::where('id', $id)->update(['email' => $request->email]);
+        }
+
+        // Update the user's role in the 'users' table if the role is provided
+        if ($request->has('role')) {
+            User::where('id', $id)->update(['role' => $request->role]);
+        }
+
+        // Update the name in the 'users' table if the firstName is provided
+        if ($request->has('firstName')) {
+            User::where('id', $id)->update(['name' => $request->firstName]);
+        }
+
+        // Update the profile with the validated data
+        $profile->update($request->all());
+
+        // Return the updated profile as a JSON response
+        return response()->json($profile);
     }
-
-    // Validate the incoming request (removed email validation)
-    $validator = Validator::make($request->all(), [
-        'phone_number' => 'nullable',
-        'firstName' => 'nullable|string',
-        'lastName' => 'nullable|string',
-        'gender' => 'nullable|string',
-        'gdpr_sms_active' => 'boolean',
-        'gdpr_email_active' => 'boolean',
-        'referred_by' => 'nullable|string',
-        'preferred_location' => 'nullable|integer',
-        'avatar' => 'nullable|string',
-        'active' => 'boolean',
-        'available_balance' => 'nullable|integer',
-        'role' => 'nullable|string',
-        'dob' => 'nullable|string',
-    ]);
-
-    // Check for validation errors
-    if ($validator->fails()) {
-        return response()->json($validator->errors(), 422);
-    }
-
-    // Update the email if provided (without checking for duplicates)
-    if ($request->has('email')) {
-        User::where('id', $id)->update(['email' => $request->email]);
-    }
-
-    // Update the user's role in the 'users' table if the role is provided
-    if ($request->has('role')) {
-        User::where('id', $id)->update(['role' => $request->role]);
-    }
-
-    // Update the name in the 'users' table if the firstName is provided
-    if ($request->has('firstName')) {
-        User::where('id', $id)->update(['name' => $request->firstName]);
-    }
-
-    // Update the profile with the validated data
-    $profile->update($request->all());
-
-    // Return the updated profile as a JSON response
-    return response()->json($profile);
-}
 
 
 
@@ -330,145 +330,193 @@ class UserProfileController extends Controller
         return response()->json($users);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/stats/{id}",
+     *     summary="Get statistics for all locations or a specific location",
+     *     description="Retrieves statistics including counts of locations, customers, products, services, and transaction totals for the current day. If id is 0, returns global stats; otherwise, returns stats for the specified location.",
+     *     operationId="getStats",
+     *     tags={"Statistics"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Location ID (0 for global stats, or a specific location ID)",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=0)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 oneOf={
+     *                     @OA\Schema(
+     *                         @OA\Property(property="locations", type="integer", example=5),
+     *                         @OA\Property(property="customers", type="integer", example=100),
+     *                         @OA\Property(property="products", type="integer", example=50),
+     *                         @OA\Property(property="services", type="integer", example=20),
+     *                         @OA\Property(property="serviceTransactionTotalToday", type="integer", example=150),
+     *                         @OA\Property(property="productTransactionTotalToday", type="number", format="float", example=250.50),
+     *                         @OA\Property(property="customerServiceToday", type="integer", example=30)
+     *                     ),
+     *                     @OA\Schema(
+     *                         @OA\Property(property="location", type="string", example="Location Name"),
+     *                         @OA\Property(property="customers", type="integer", example=20),
+     *                         @OA\Property(property="products", type="integer", example=10),
+     *                         @OA\Property(property="services", type="integer", example=5),
+     *                         @OA\Property(property="serviceTransactionTotalToday", type="integer", example=30),
+     *                         @OA\Property(property="productTransactionTotalToday", type="number", format="float", example=75.25),
+     *                         @OA\Property(property="customerServiceToday", type="integer", example=8)
+     *                     )
+     *                 }
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Location not found",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Location not found")
+     *         )
+     *     )
+     * )
+     */
     public function stats($id)
-{
-    if ($id == 0) {
-        // Global Statistics
-        $locations = Location::count();
-        $customers = User::where('role', 'customer')->count();
-        $products = Product::count();
-        $services = Service::count();
+    {
+        // Determine if we're fetching global or location-specific stats
+        $isGlobal = $id == 0;
+        $todayStart = now()->startOfDay();
+        $todayEnd = now()->endOfDay();
 
-        // Today's total quantities and values for all purchased service transactions (location does not matter)
-        $serviceTransactionTotalToday = ServiceTransaction::where('created_at', '>=', now()->startOfDay())
-            ->where('type', 'used')
-            ->sum('quantity');
+        // Execute the query using DB::selectOne
+        $stats = DB::selectOne("
+        SELECT
+            (SELECT COUNT(*) FROM locations) AS locations_count,
+            (SELECT COUNT(*) FROM users WHERE role = ?) AS customers_count,
+            (SELECT COUNT(*) FROM products) AS products_count,
+            (SELECT COUNT(*) FROM services) AS services_count,
+            COALESCE((
+                SELECT SUM(st.quantity)
+                FROM service_transactions st
+                WHERE st.type = ?
+                AND st.created_at >= ?
+                AND st.created_at < ?
+                AND (? OR st.location = ?)
+            ), 0) AS service_transaction_total_today,
+            COALESCE((
+                SELECT SUM(s.price)
+                FROM service_transactions st
+                JOIN services s ON s.id = st.service_id
+                WHERE st.type = ?
+                AND st.created_at >= ?
+                AND st.created_at < ?
+                AND (? OR st.location = ?)
+            ), 0) AS service_transaction_price_total_today,
+            COALESCE((
+                SELECT SUM(pt.quantity * p.price)
+                FROM product_transaction pt
+                JOIN products p ON p.id = pt.product_id
+                WHERE pt.created_at >= ?
+                AND pt.created_at < ?
+                AND (? OR pt.location_id = ?)
+            ), 0) AS product_transaction_total_today,
+            (SELECT COUNT(DISTINCT st.user_id)
+             FROM service_transactions st
+             WHERE st.type = ?
+             AND st.created_at >= ?
+             AND st.created_at < ?
+             AND (? OR st.location = ?)
+            ) AS total_unique_customers_today
+    ", [
+            'customer', // for customers_count
+            'used',
+            $todayStart,
+            $todayEnd,
+            $isGlobal,
+            $id, // for service_transaction_total_today
+            'purchased',
+            $todayStart,
+            $todayEnd,
+            $isGlobal,
+            $id, // for service_transaction_price_total_today
+            $todayStart,
+            $todayEnd,
+            $isGlobal,
+            $id, // for product_transaction_total_today
+            'used',
+            $todayStart,
+            $todayEnd,
+            $isGlobal,
+            $id // for total_unique_customers_today
+        ]);
 
-            $serviceTransactionPriceTotalToday = ServiceTransaction::where('created_at', '>=', now()->startOfDay())
-            ->where('type', 'purchased')
-            ->get()
-            ->sum(fn($transaction) => Service::find($transaction->service_id)->price ?? 0);
+        // Prepare the response based on whether it's global or location-specific
+        if ($isGlobal) {
+            $data = [
+                'locations' => (int)$stats->locations_count,
+                'customers' => (int)$stats->customers_count,
+                'products' => (int)$stats->products_count,
+                'services' => (int)$stats->services_count,
+                'serviceTransactionTotalToday' => (int)$stats->service_transaction_total_today,
+                'productTransactionTotalToday' => (float)($stats->product_transaction_total_today + $stats->service_transaction_price_total_today),
+                'customerServiceToday' => (int)$stats->total_unique_customers_today,
+            ];
+        } else {
+            // Check if the location exists
+            $location = Location::find($id);
+            if (!$location) {
+                return response()->json(['message' => 'Location not found'], 404);
+            }
 
-        // Today's total quantities and values for product transactions
-        $productIds = ProductTransaction::where('created_at', '>=', now()->startOfDay())->pluck('product_id');
-        $productsData = Product::whereIn('id', $productIds)->get()->keyBy('id');
-
-        $productTransactionTotalToday = ProductTransaction::where('created_at', '>=', now()->startOfDay())
-            ->get()
-            ->sum(fn($transaction) => ($productsData[$transaction->product_id]->price ?? 0) * $transaction->quantity);
-
-        // Daily unique customer service count for all locations (type = 'used')
-        $totalUniqueCustomersToday = ServiceTransaction::where('type', 'used')
-            ->where('created_at', '>=', now()->startOfDay())
-            ->distinct('user_id')
-            ->count('user_id');
-
-        // Prepare the response data
-        $data = [
-            'locations' => $locations,
-            'customers' => $customers,
-            'products' => $products,
-            'services' => $services,
-            'serviceTransactionTotalToday' => $serviceTransactionTotalToday,
-            'productTransactionTotalToday' => $productTransactionTotalToday + $serviceTransactionPriceTotalToday,
-            'customerServiceToday' => $totalUniqueCustomersToday,
-        ];
-    } else {
-        // Location-specific Statistics
-        $location = Location::find($id);
-        if (!$location) {
-            return response()->json(['message' => 'Location not found'], 404);
+            $data = [
+                'location' => $location->name,
+                'customers' => (int)$stats->customers_count,
+                'products' => (int)$stats->products_count,
+                'services' => (int)$stats->services_count,
+                'serviceTransactionTotalToday' => (int)$stats->service_transaction_total_today,
+                'productTransactionTotalToday' => (float)($stats->product_transaction_total_today + $stats->service_transaction_price_total_today),
+                'customerServiceToday' => (int)$stats->total_unique_customers_today,
+            ];
         }
 
-        $customers = User::where('role', 'customer')
-            ->join('user_profiles', 'users.id', '=', 'user_profiles.user_id')
-            ->where('user_profiles.preferred_location', $id)
-            ->count();
-
-        $products = ProductTransaction::where('location_id', $id)->distinct('product_id')->count('product_id');
-        $services = ServiceTransaction::where('location', $id)->distinct('service_id')->count('service_id');
-
-        // Daily totals for service transactions at the specific location
-        $serviceTransactionTotalToday = ServiceTransaction::where('created_at', '>=', now()->startOfDay())
-            ->where('location', $id)
-            ->where('type', 'used')
-            ->sum('quantity');
-
-            $serviceTransactionPriceTotalToday = ServiceTransaction::where('created_at', '>=', now()->startOfDay())
-            ->where('location', $id)
-            ->where('type', 'purchased')
-            ->get()
-            ->sum(fn($transaction) => Service::find($transaction->service_id)->price ?? 0);
-
-
-        // Today's product totals at the specific location
-        $productIds = ProductTransaction::where('created_at', '>=', now()->startOfDay())
-            ->where('location_id', $id)
-            ->pluck('product_id');
-        $productsData = Product::whereIn('id', $productIds)->get()->keyBy('id');
-
-        $productTransactionTotalToday = ProductTransaction::where('created_at', '>=', now()->startOfDay())
-            ->where('location_id', $id)
-            ->get()
-            ->sum(fn($transaction) => ($productsData[$transaction->product_id]->price ?? 0) * $transaction->quantity);
-
-        // Unique customer service count for the specific location
-        $totalUniqueCustomersToday = ServiceTransaction::where('type', 'used')
-            ->where('created_at', '>=', now()->startOfDay())
-            ->where('location', $id)
-            ->distinct('user_id')
-            ->count('user_id');
-
-        // Prepare the response data
-        $data = [
-            'location' => $location->name,
-            'customers' => $customers,
-            'products' => $products,
-            'services' => $services,
-            'serviceTransactionTotalToday' => $serviceTransactionTotalToday,
-            'productTransactionTotalToday' => $productTransactionTotalToday + $serviceTransactionPriceTotalToday,
-            'customerServiceToday' => $totalUniqueCustomersToday,
-        ];
+        return response()->json(['data' => $data]);
     }
 
-    return response()->json(['data' => $data]);
-}
 
 
 
 
 
+    public function clearData()
+    {
+        DB::beginTransaction();
 
-public function clearData() {
-    DB::beginTransaction();
+        try {
+            // Temporarily disable foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-    try {
-        // Temporarily disable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            // Truncate tables
+            // Service::truncate();
+            ServiceTransaction::truncate();
+            // Product::truncate();
+            ProductTransaction::truncate();
 
-        // Truncate tables
-        // Service::truncate();
-        ServiceTransaction::truncate();
-        // Product::truncate();
-        ProductTransaction::truncate();
+            // Delete users with 'customer' role
+            User::where('role', 'customer')->delete();
 
-        // Delete users with 'customer' role
-        User::where('role', 'customer')->delete();
-
-        DB::commit();
-    } catch (\Exception $e) {
-        DB::rollBack();
-        // Log error for debugging
-        Log::error("Error clearing data: {$e->getMessage()}");
-        throw $e;
-    } finally {
-        // Ensure foreign key checks are re-enabled
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log error for debugging
+            Log::error("Error clearing data: {$e->getMessage()}");
+            throw $e;
+        } finally {
+            // Ensure foreign key checks are re-enabled
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
     }
-}
-
-
-
-
-
 }

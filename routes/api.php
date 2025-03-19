@@ -62,13 +62,11 @@ Route::get('/customers/search', [CustomerController::class, 'searchCustomers']);
 Route::post('/customers/date-range', [CustomerController::class, 'customerDateRange']);
 Route::get('/users', [CustomerController::class, 'getAllUsers']);
 
-Route::group(['middleware' => 'auth:api'], function () {
+// Route::group(['middleware' => 'auth:api'], function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('me', [AuthController::class, 'me']);
     Route::post('refresh', [AuthController::class, 'refresh']);
     Route::get('/totalSpend/{id}',[ServiceTransactionController::class,'totalSpend']);
-    // Route::get('stats',[UserProfileController::class,'stat']);
-    // User Profile routes
 
     Route::get('getUser',[AuthController::class,'getUser']);
     Route::get('/customers', [CustomerController::class, 'getAllCustomers']);
@@ -128,4 +126,4 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/UsedMin/{id}',[ServiceTransactionController::class,'minuteUsed']);
     Route::get('/UsedMin',[ServiceTransactionController::class,'minuteUsed']);
 
-});
+// });

@@ -603,7 +603,6 @@ class CustomerController extends Controller
             $results = DB::table('users as u')
                 ->select(
                     'u.id',
-                    'u.name', // Added to fix the undefined property error
                     'u.email',
                     'u.role',
                     'up.address',
@@ -633,10 +632,8 @@ class CustomerController extends Controller
                 })
                 ->leftJoin('product_transaction as pt', 'pt.user_id', '=', 'u.id')
                 ->leftJoin('products as p', 'p.id', '=', 'pt.product_id')
-                ->where('u.role', 'customer')
                 ->groupBy(
                     'u.id',
-                    'u.name', // Added to the groupBy clause
                     'u.email',
                     'u.role',
                     'up.address',
@@ -662,7 +659,6 @@ class CustomerController extends Controller
             $usersWithProfiles = $results->map(function ($result) {
                 $user = [
                     'id' => $result->id,
-                    'name' => $result->name,
                     'email' => $result->email,
                     'role' => $result->role,
                 ];

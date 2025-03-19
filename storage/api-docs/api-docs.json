@@ -2573,6 +2573,131 @@
                     }
                 }
             }
+        },
+        "/api/stats/{id}": {
+            "get": {
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Get statistics for all locations or a specific location",
+                "description": "Retrieves statistics including counts of locations, customers, products, services, and transaction totals for the current day. If id is 0, returns global stats; otherwise, returns stats for the specified location.",
+                "operationId": "getStats",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Location ID (0 for global stats, or a specific location ID)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "oneOf": [
+                                                {
+                                                    "properties": {
+                                                        "locations": {
+                                                            "type": "integer",
+                                                            "example": 5
+                                                        },
+                                                        "customers": {
+                                                            "type": "integer",
+                                                            "example": 100
+                                                        },
+                                                        "products": {
+                                                            "type": "integer",
+                                                            "example": 50
+                                                        },
+                                                        "services": {
+                                                            "type": "integer",
+                                                            "example": 20
+                                                        },
+                                                        "serviceTransactionTotalToday": {
+                                                            "type": "integer",
+                                                            "example": 150
+                                                        },
+                                                        "productTransactionTotalToday": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 250.5
+                                                        },
+                                                        "customerServiceToday": {
+                                                            "type": "integer",
+                                                            "example": 30
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                {
+                                                    "properties": {
+                                                        "location": {
+                                                            "type": "string",
+                                                            "example": "Location Name"
+                                                        },
+                                                        "customers": {
+                                                            "type": "integer",
+                                                            "example": 20
+                                                        },
+                                                        "products": {
+                                                            "type": "integer",
+                                                            "example": 10
+                                                        },
+                                                        "services": {
+                                                            "type": "integer",
+                                                            "example": 5
+                                                        },
+                                                        "serviceTransactionTotalToday": {
+                                                            "type": "integer",
+                                                            "example": 30
+                                                        },
+                                                        "productTransactionTotalToday": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 75.25
+                                                        },
+                                                        "customerServiceToday": {
+                                                            "type": "integer",
+                                                            "example": 8
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Location not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Location not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -2658,6 +2783,10 @@
         {
             "name": "User Profiles",
             "description": "User Profiles"
+        },
+        {
+            "name": "Statistics",
+            "description": "Statistics"
         }
     ]
 }
