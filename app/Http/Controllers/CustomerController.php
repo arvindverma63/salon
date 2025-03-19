@@ -575,12 +575,14 @@ class CustomerController extends Controller
      *                     @OA\Property(property="gdpr_email_active", type="boolean", example=true),
      *                     @OA\Property(property="gdpr_sms_active", type="boolean", example=false),
      *                     @OA\Property(property="gender", type="string", example="female", nullable=true),
+     *                     @OA\Property(property="firstName", type="string", example="Ruby", nullable=true),
+     *                     @OA\Property(property="lastName", type="string", example="White", nullable=true),
      *                     @OA\Property(property="post_code", type="string", example="AB12 3CD", nullable=true)
      *                 ),
      *                 @OA\Property(property="total_used_minutes", type="integer", example=0),
-     *                 @OA\Property(property="total_service_purchased_price", type="number", format="float", example="0.00"),
-     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example="0.00"),
-     *                 @OA\Property(property="total_price", type="number", format="float", example="0.00")
+     *                 @OA\Property(property="total_service_purchased_price", type="number", format="float", example=0.00),
+     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example=0.00),
+     *                 @OA\Property(property="total_price", type="number", format="float", example=0.00)
      *             )
      *         )
      *     ),
@@ -601,7 +603,7 @@ class CustomerController extends Controller
             $results = DB::table('users as u')
                 ->select(
                     'u.id',
-                    'u.name',
+                    'u.name', // Added to fix the undefined property error
                     'u.email',
                     'u.role',
                     'up.address',
@@ -616,6 +618,8 @@ class CustomerController extends Controller
                     'up.gdpr_email_active',
                     'up.gdpr_sms_active',
                     'up.gender',
+                    'up.firstName',
+                    'up.lastName',
                     'up.post_code',
                     DB::raw('COALESCE(SUM(CASE WHEN st.type = \'used\' THEN st.quantity ELSE 0 END), 0) as total_used_minutes'),
                     DB::raw('COALESCE(SUM(CASE WHEN st.type = \'purchased\' THEN s.price ELSE 0 END), 0) as total_service_purchased_price'),
@@ -632,7 +636,7 @@ class CustomerController extends Controller
                 ->where('u.role', 'customer')
                 ->groupBy(
                     'u.id',
-                    'u.name',
+                    'u.name', // Added to the groupBy clause
                     'u.email',
                     'u.role',
                     'up.address',
@@ -647,6 +651,8 @@ class CustomerController extends Controller
                     'up.gdpr_email_active',
                     'up.gdpr_sms_active',
                     'up.gender',
+                    'up.firstName',
+                    'up.lastName',
                     'up.post_code'
                 )
                 ->orderBy('u.id')
@@ -674,13 +680,15 @@ class CustomerController extends Controller
                     'gdpr_email_active' => $result->gdpr_email_active,
                     'gdpr_sms_active' => $result->gdpr_sms_active,
                     'gender' => $result->gender,
+                    'firstName' => $result->firstName,
+                    'lastName' => $result->lastName,
                     'post_code' => $result->post_code,
                 ];
 
-                $totalUsedMinutes = $result->total_used_minutes;
-                $totalServicePurchasedPrice = number_format((float)$result->total_service_purchased_price, 2, '.', '');
-                $totalProductPurchasedPrice = number_format((float)$result->total_product_purchased_price, 2, '.', '');
-                $totalPrice = number_format((float)($totalServicePurchasedPrice + $totalProductPurchasedPrice), 2, '.', '');
+                $totalUsedMinutes = (int)$result->total_used_minutes; // Ensure integer
+                $totalServicePurchasedPrice = (float)$result->total_service_purchased_price; // Ensure float
+                $totalProductPurchasedPrice = (float)$result->total_product_purchased_price; // Ensure float
+                $totalPrice = (float)($totalServicePurchasedPrice + $totalProductPurchasedPrice); // Ensure float
 
                 return [
                     'user' => $user,

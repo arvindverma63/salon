@@ -1208,6 +1208,16 @@
                                                         "example": "female",
                                                         "nullable": true
                                                     },
+                                                    "firstName": {
+                                                        "type": "string",
+                                                        "example": "Ruby",
+                                                        "nullable": true
+                                                    },
+                                                    "lastName": {
+                                                        "type": "string",
+                                                        "example": "White",
+                                                        "nullable": true
+                                                    },
                                                     "post_code": {
                                                         "type": "string",
                                                         "example": "AB12 3CD",
@@ -1223,17 +1233,17 @@
                                             "total_service_purchased_price": {
                                                 "type": "number",
                                                 "format": "float",
-                                                "example": "0.00"
+                                                "example": 0
                                             },
                                             "total_product_purchased_price": {
                                                 "type": "number",
                                                 "format": "float",
-                                                "example": "0.00"
+                                                "example": 0
                                             },
                                             "total_price": {
                                                 "type": "number",
                                                 "format": "float",
-                                                "example": "0.00"
+                                                "example": 0
                                             }
                                         },
                                         "type": "object"
