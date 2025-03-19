@@ -1159,6 +1159,59 @@
                                                         "type": "string",
                                                         "example": "07541888560",
                                                         "nullable": true
+                                                    },
+                                                    "preferred_location": {
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2023-01-01T10:00:00Z"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2023-01-01T10:00:00Z"
+                                                    },
+                                                    "active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "available_balance": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 100.5
+                                                    },
+                                                    "total_spend": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 500
+                                                    },
+                                                    "dob": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "example": "1990-05-15",
+                                                        "nullable": true
+                                                    },
+                                                    "gdpr_email_active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "gdpr_sms_active": {
+                                                        "type": "boolean",
+                                                        "example": false
+                                                    },
+                                                    "gender": {
+                                                        "type": "string",
+                                                        "example": "female",
+                                                        "nullable": true
+                                                    },
+                                                    "post_code": {
+                                                        "type": "string",
+                                                        "example": "AB12 3CD",
+                                                        "nullable": true
                                                     }
                                                 },
                                                 "type": "object"
