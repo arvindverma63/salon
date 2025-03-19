@@ -49,7 +49,6 @@ Route::post('AddCustomer', [AuthController::class, 'customerAdd']);
 Route::get('/product-sale-report',[ProductTransactionController::class,'productSale']);
 Route::get('/service-purchased-report',[ServiceTransactionController::class,'servicePurchased']);
 Route::get('/service-used-report',[ServiceTransactionController::class,'serviceUsed']);
-Route::get('stats/{id}', [UserProfileController::class, 'stats']);
 Route::post('/product-saled-report',[ProductTransactionController::class,'productSaled']);
 Route::post('/service-purchase-report',[ServiceTransactionController::class,'servicePurchase']);
 Route::post('/service-use-report',[ServiceTransactionController::class,'serviceUse']);
@@ -59,7 +58,7 @@ Route::get('/customers/search', [CustomerController::class, 'searchCustomers']);
 Route::post('/customers/date-range', [CustomerController::class, 'customerDateRange']);
 Route::get('/users', [CustomerController::class, 'getAllUsers']);
 
-// Route::group(['middleware' => 'auth:api'], function () {
+Route::group(['middleware' => 'auth:api'], function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('me', [AuthController::class, 'me']);
     Route::post('refresh', [AuthController::class, 'refresh']);
@@ -111,6 +110,7 @@ Route::get('/users', [CustomerController::class, 'getAllUsers']);
 
 
 
+    Route::get('stats/{id}', [UserProfileController::class, 'stats']);
     Route::get('/product-transactions', [ProductTransactionController::class, 'index']);
     Route::post('/product-transactions', [ProductTransactionController::class, 'store']);
     Route::get('/product-transactions/{id}', [ProductTransactionController::class, 'show']);
@@ -129,4 +129,4 @@ Route::get('/users', [CustomerController::class, 'getAllUsers']);
     Route::get('/UsedMin/{id}',[ServiceTransactionController::class,'minuteUsed']);
     Route::get('/UsedMin',[ServiceTransactionController::class,'minuteUsed']);
 
-// });
+});
