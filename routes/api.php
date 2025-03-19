@@ -102,7 +102,7 @@ Route::get('/users', [CustomerController::class, 'getAllUsers']);
 
     Route::get('/locations',[LocationController::class,'index']);
     Route::post('/locations',[LocationController::class,'store']);
-    Route::get('/locations/{id}',[LocationController::class]);
+    Route::get('/locations/{id}',[LocationController::class,'show']);
     Route::put('/location/{id}',[LocationController::class,'update']);
     Route::delete("/locations/{id}",[LocationController::class,'destroy']);
 
