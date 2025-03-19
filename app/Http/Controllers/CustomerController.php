@@ -537,6 +537,7 @@ class CustomerController extends Controller
     }
 
 
+
     /**
      * @OA\Get(
      *     path="/api/users",
@@ -551,15 +552,24 @@ class CustomerController extends Controller
      *             type="array",
      *             @OA\Items(
      *                 type="object",
-     *                 @OA\Property(property="id", type="integer", example=2258),
-     *                 @OA\Property(property="name", type="string", example="Ruby White"),
-     *                 @OA\Property(property="email", type="string", example="ruby2pro@gmail.com"),
-     *                 @OA\Property(property="role", type="string", example="customer"),
-     *                 @OA\Property(property="address", type="string", example="Connerways Intern Lane Madge..."),
-     *                 @OA\Property(property="phone_number", type="string", example="07541888560", nullable=true),
+     *                 @OA\Property(
+     *                     property="user",
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", example=2258),
+     *                     @OA\Property(property="name", type="string", example="Ruby White"),
+     *                     @OA\Property(property="email", type="string", example="ruby2pro@gmail.com"),
+     *                     @OA\Property(property="role", type="string", example="customer")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="profile",
+     *                     type="object",
+     *                     @OA\Property(property="address", type="string", example="Connerways Intern Lane Madge..."),
+     *                     @OA\Property(property="phone_number", type="string", example="07541888560", nullable=true)
+     *                 ),
      *                 @OA\Property(property="total_used_minutes", type="integer", example=0),
      *                 @OA\Property(property="total_service_purchased_price", type="number", format="float", example=0.00),
-     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example=0.00)
+     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example=0.00),
+     *                 @OA\Property(property="total_price", type="number", format="float", example=0.00)
      *             )
      *         )
      *     ),
@@ -576,6 +586,7 @@ class CustomerController extends Controller
     public function getAllUsers()
     {
         try {
+            // Fetch the raw data
             $results = DB::table('users as u')
                 ->select(
                     'u.id',
@@ -601,7 +612,36 @@ class CustomerController extends Controller
                 ->orderBy('u.id')
                 ->get();
 
-            return $results;
+            // Transform the results into the desired structure
+            $usersWithProfiles = $results->map(function ($result) {
+                $user = [
+                    'id' => $result->id,
+                    'name' => $result->name,
+                    'email' => $result->email,
+                    'role' => $result->role,
+                ];
+
+                $profile = [
+                    'address' => $result->address,
+                    'phone_number' => $result->phone_number,
+                ];
+
+                $totalUsedMinutes = $result->total_used_minutes;
+                $totalServicePurchasedPrice = $result->total_service_purchased_price;
+                $totalProductPurchasedPrice = $result->total_product_purchased_price;
+                $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
+
+                return [
+                    'user' => $user,
+                    'profile' => $profile,
+                    'total_used_minutes' => $totalUsedMinutes,
+                    'total_service_purchased_price' => $totalServicePurchasedPrice,
+                    'total_product_purchased_price' => $totalProductPurchasedPrice,
+                    'total_price' => $totalPrice,
+                ];
+            })->all();
+
+            return $usersWithProfiles;
         } catch (\Exception $e) {
             // Log the error
             Log::error('Error fetching users: ' . $e->getMessage());

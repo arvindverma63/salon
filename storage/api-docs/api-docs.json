@@ -1128,30 +1128,40 @@
                                     "type": "array",
                                     "items": {
                                         "properties": {
-                                            "id": {
-                                                "type": "integer",
-                                                "example": 2258
+                                            "user": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 2258
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Ruby White"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "ruby2pro@gmail.com"
+                                                    },
+                                                    "role": {
+                                                        "type": "string",
+                                                        "example": "customer"
+                                                    }
+                                                },
+                                                "type": "object"
                                             },
-                                            "name": {
-                                                "type": "string",
-                                                "example": "Ruby White"
-                                            },
-                                            "email": {
-                                                "type": "string",
-                                                "example": "ruby2pro@gmail.com"
-                                            },
-                                            "role": {
-                                                "type": "string",
-                                                "example": "customer"
-                                            },
-                                            "address": {
-                                                "type": "string",
-                                                "example": "Connerways Intern Lane Madge..."
-                                            },
-                                            "phone_number": {
-                                                "type": "string",
-                                                "example": "07541888560",
-                                                "nullable": true
+                                            "profile": {
+                                                "properties": {
+                                                    "address": {
+                                                        "type": "string",
+                                                        "example": "Connerways Intern Lane Madge..."
+                                                    },
+                                                    "phone_number": {
+                                                        "type": "string",
+                                                        "example": "07541888560",
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
                                             },
                                             "total_used_minutes": {
                                                 "type": "integer",
@@ -1163,6 +1173,11 @@
                                                 "example": 0
                                             },
                                             "total_product_purchased_price": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0
+                                            },
+                                            "total_price": {
                                                 "type": "number",
                                                 "format": "float",
                                                 "example": 0
