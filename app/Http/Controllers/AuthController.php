@@ -20,6 +20,7 @@ use App\Models\ProductTransaction;
 use App\Models\Product;
 use Illuminate\Support\Facades\Password;
 use DateTime;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\FacadesLog;
 use Symfony\Component\HttpKernel\Profiler\Profile;
@@ -148,7 +149,8 @@ class AuthController extends Controller
             'access_token' => $token,
             'id' => $user->id,
             'name' => $profile->firstName . " " . $profile->lastName,
-            'preferred_location' => $location ? $location->name : null
+            'preferred_location' => $location ? $location->name : null,
+            'location_id'=> $profile->preferred_location
         ]);
     }
 
@@ -269,7 +271,7 @@ class AuthController extends Controller
             }
 
             // Send the reset password email
-            Mail::to($request->email)->send(new PasswordResetMail($token));
+            Mail::to($request->email)->send(new PasswordReset($token));
 
             Log::info('Password reset email sent successfully to: ' . $request->email);
 

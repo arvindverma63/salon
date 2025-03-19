@@ -11,10 +11,7 @@ use App\Http\Controllers\ProductTransactionController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ServiceUsageController;
 use App\Http\Controllers\ServiceTransactionController;
-
-
-
-
+use App\Models\Location;
 
 /**
  * @OA\Info(
@@ -36,7 +33,7 @@ use App\Http\Controllers\ServiceTransactionController;
  * )
  */
 
- Route::post('/service-transactions', [ServiceTransactionController::class, 'store']);
+Route::post('/service-transactions', [ServiceTransactionController::class, 'store']);
 Route::get('/verify-email/{token}', 'AuthController@verifyEmail');
 
 // Authentication routes
@@ -103,7 +100,13 @@ Route::get('/users', [CustomerController::class, 'getAllUsers']);
 
 
 
-    Route::apiResource('locations', LocationController::class);
+    Route::get('/locations',[LocationController::class,'index']);
+    Route::post('/locations',[LocationController::class,'store']);
+    Route::get('/locations/{id}',[LocationController::class]);
+    Route::put('/location/{id}',[LocationController::class,'update']);
+    Route::delete("/locations/{id}",[LocationController::class,'destroy']);
+
+
     Route::post('getQR',[LocationController::class,'generate']);
 
 
