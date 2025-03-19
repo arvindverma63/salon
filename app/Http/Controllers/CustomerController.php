@@ -686,8 +686,8 @@ class CustomerController extends Controller
                     'user' => $user,
                     'profile' => $profile,
                     'total_used_minutes' => $totalUsedMinutes,
-                    'total_service_purchased_price' => $totalServicePurchasedPrice,
-                    'total_product_purchased_price' => $totalProductPurchasedPrice,
+                    'total_service_purchased_price' => number_format((float)$totalServicePurchasedPrice, 2, '.', ''),
+                    'total_product_purchased_price' => number_format((float)$totalProductPurchasedPrice, 2, '.', ''),
                     'total_price' => $totalPrice,
                 ];
             })->all();
