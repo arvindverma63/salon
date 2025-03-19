@@ -75,84 +75,144 @@ class ServiceTransactionController extends Controller
     //     // Return the combined data as a JSON response
     //     return response()->json($result);
     // }
+
+    /**
+     * @OA\Get(
+     *     path="/api/service-transactions",
+     *     summary="Get all service transactions with user, location, and service details",
+     *     description="Retrieves a list of all service transactions, including user profile details, preferred location details, and service details (if applicable).",
+     *     operationId="getServiceTransactions",
+     *     tags={"Service Transactions"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="user_details",
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="firstName", type="string", example="John"),
+     *                     @OA\Property(property="lastName", type="string", example="Doe"),
+     *                     @OA\Property(property="email", type="string", example="john.doe@example.com"),
+     *                     @OA\Property(property="phone_number", type="string", example="1234567890"),
+     *                     @OA\Property(property="available_balance", type="number", format="float", example=100.50),
+     *                     @OA\Property(
+     *                         property="preferred_location",
+     *                         type="object",
+     *                         nullable=true,
+     *                         @OA\Property(property="id", type="integer", example=1),
+     *                         @OA\Property(property="name", type="string", example="Main Branch"),
+     *                         @OA\Property(property="address", type="string", example="123 Main St"),
+     *                         @OA\Property(property="city", type="string", example="New York"),
+     *                         @OA\Property(property="phone_number", type="string", example="9876543210"),
+     *                         @OA\Property(property="post_code", type="string", example="10001")
+     *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="service",
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="name", type="string", example="Tanning Session"),
+     *                     @OA\Property(property="price", type="number", format="float", example=25.00)
+     *                 ),
+     *                 @OA\Property(
+     *                     property="transaction",
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="quantity", type="integer", example=2),
+     *                     @OA\Property(property="type", type="string", example="used"),
+     *                     @OA\Property(property="created_at", type="string", format="date-time", example="2025-03-19T10:00:00Z"),
+     *                     @OA\Property(property="updated_at", type="string", format="date-time", example="2025-03-19T10:00:00Z")
+     *                 )
+     *             )
+     *         )
+     *     )
+     * )
+     */
     public function index()
-{
-    // Fetch all product transactions
-    $transactions = ServiceTransaction::all();
-    $result = [];
+    {
+        // Define the raw SQL query as a string
+        $query = "
+            SELECT
+                -- User profile details
+                up.user_id AS user_id,
+                up.firstName AS user_firstName,
+                up.lastName AS user_lastName,
+                up.email AS user_email,
+                up.phone_number AS user_phone_number,
+                up.available_balance AS user_available_balance,
+                -- Preferred location details (nullable)
+                l.id AS location_id,
+                l.name AS location_name,
+                l.address AS location_address,
+                l.city AS location_city,
+                l.phone_number AS location_phone_number,
+                l.post_code AS location_post_code,
+                -- Service details (nullable)
+                COALESCE(s.id, 0) AS service_id,
+                COALESCE(s.serviceName, '') AS service_name,
+                COALESCE(s.price, 0) AS service_price,
+                -- Transaction details
+                st.id AS transaction_id,
+                st.quantity AS transaction_quantity,
+                st.type AS transaction_type,
+                st.created_at AS transaction_created_at,
+                st.updated_at AS transaction_updated_at
+            FROM service_transactions st
+            -- Join with user_profiles (required)
+            JOIN user_profiles up ON up.user_id = st.user_id
+            -- Left join with locations (preferred_location might be NULL)
+            LEFT JOIN locations l ON l.id = up.preferred_location
+            -- Left join with services (service_id might be NULL)
+            LEFT JOIN services s ON s.id = st.service_id
+        ";
 
-    foreach ($transactions as $transaction) {
-        $userId = $transaction->user_id;
+        // Execute the query using DB::select with a string
+        $result = DB::select($query);
 
-        // Fetch the user profile data
-        $userProfile = User_profile::select(
-            'user_id as _id',
-            'firstName',
-            'lastName',
-            'email',
-            'phone_number',
-            'available_balance',
-            'preferred_location'
-        )->where('user_id', $userId)->first();
+        // Transform the raw query result into the desired JSON structure
+        $formattedResult = array_map(function ($row) {
+            return [
+                'user_details' => [
+                    'id' => $row->user_id,
+                    'firstName' => $row->user_firstName,
+                    'lastName' => $row->user_lastName,
+                    'email' => $row->user_email,
+                    'phone_number' => $row->user_phone_number,
+                    'available_balance' => (float)$row->user_available_balance,
+                    'preferred_location' => $row->location_id ? [
+                        'id' => $row->location_id,
+                        'name' => $row->location_name,
+                        'address' => $row->location_address,
+                        'city' => $row->location_city,
+                        'phone_number' => $row->location_phone_number,
+                        'post_code' => $row->location_post_code,
+                    ] : null,
+                ],
+                'service' => [
+                    'id' => $row->service_id,
+                    'name' => $row->service_name,
+                    'price' => (float)$row->service_price,
+                ],
+                'transaction' => [
+                    'id' => $row->transaction_id,
+                    'quantity' => $row->transaction_quantity,
+                    'type' => $row->transaction_type,
+                    'created_at' => $row->transaction_created_at,
+                    'updated_at' => $row->transaction_updated_at,
+                ],
+            ];
+        }, $result);
 
-        // Skip if user profile not found
-        if (!$userProfile) continue;
+        // Close the database connection
+        $connectionName = DB::getDefaultConnection();
+        DB::disconnect($connectionName);
 
-        // Fetch preferred location details, if available
-        $preferredLocation = Location::select(
-            'id as _id',
-            'name',
-            'address',
-            'city',
-            'phone_number',
-            'post_code'
-        )->find($userProfile->preferred_location);
-
-        // Fetch service details, if service_id is provided
-        $service = $transaction->service_id
-            ? Service::select('id as _id', 'serviceName', 'price')
-                ->find($transaction->service_id)
-            : null;
-
-        // Add the transaction data to the result array
-        $result[] = [
-            'user_details' => [
-                'id' => $userProfile->_id,
-                'firstName' => $userProfile->firstName,
-                'lastName' => $userProfile->lastName,
-                'email' => $userProfile->email,
-                'phone_number' => $userProfile->phone_number,
-                'available_balance' => $userProfile->available_balance,
-                'preferred_location' => $preferredLocation ? [
-                    'id' => $preferredLocation->_id,
-                    'name' => $preferredLocation->name,
-                    'address' => $preferredLocation->address,
-                    'city' => $preferredLocation->city,
-                    'phone_number' => $preferredLocation->phone_number,
-                    'post_code' => $preferredLocation->post_code,
-                ] : null, // If preferred location is not found
-            ],
-            'service' => $service ? [
-                'id' => $service->_id,
-                'name' => $service->serviceName,
-                'price' => $service->price,
-            ] : [
-                'id' => 0,
-                'name' => "",
-                'price' => 0,
-            ],
-            'transaction' => [
-                'id' => $transaction->id,
-                'quantity' => $transaction->quantity,
-                'type' => $transaction->type,
-                'created_at' => $transaction->created_at,
-                'updated_at' => $transaction->updated_at,
-            ],
-        ];
+        return response()->json($formattedResult);
     }
-
-    return response()->json($result);
-}
 
 
 
@@ -184,58 +244,58 @@ class ServiceTransactionController extends Controller
      * )
      */
     public function store(Request $request)
-{
-    $request->validate([
-        'user_id' => 'required|integer',
-        'type' => 'nullable|string|in:purchased,used,credit',
-        'location_id' => 'nullable|integer',
-        'service_id' => 'nullable|integer',
-        'quantity' => 'nullable|integer',
-    ]);
+    {
+        $request->validate([
+            'user_id' => 'required|integer',
+            'type' => 'nullable|string|in:purchased,used,credit',
+            'location_id' => 'nullable|integer',
+            'service_id' => 'nullable|integer',
+            'quantity' => 'nullable|integer',
+        ]);
 
-    // Check if service exists for 'purchased' or 'used' types
-    $serviceQuantity = null;
-    if (in_array($request->type, ['purchased', 'used'])) {
-        $service = Service::find($request->service_id);
-        if (!$service) {
-            return response()->json(['error' => 'Service not found'], 404);
+        // Check if service exists for 'purchased' or 'used' types
+        $serviceQuantity = null;
+        if (in_array($request->type, ['purchased', 'used'])) {
+            $service = Service::find($request->service_id);
+            if (!$service) {
+                return response()->json(['error' => 'Service not found'], 404);
+            }
+            $serviceQuantity = $service->minutesAvailable;
         }
-        $serviceQuantity = $service->minutesAvailable;
-    }
 
-    // Set quantity based on type
-    $quantity = ($request->type === 'credit') ? $request->quantity : $serviceQuantity;
+        // Set quantity based on type
+        $quantity = ($request->type === 'credit') ? $request->quantity : $serviceQuantity;
 
-    // Create the service transaction
-    $serviceTransaction = ServiceTransaction::create([
-        'user_id' => $request->user_id,
-        'quantity' => $quantity,
-        'type' => $request->type,
-        'location' => $request->location_id,
-        'service_id' => $request->service_id,
-    ]);
+        // Create the service transaction
+        $serviceTransaction = ServiceTransaction::create([
+            'user_id' => $request->user_id,
+            'quantity' => $quantity,
+            'type' => $request->type,
+            'location' => $request->location_id,
+            'service_id' => $request->service_id,
+        ]);
 
-    // Fetch user profile
-    $userProfile = User_profile::where('user_id', $request->user_id)->first();
-    if (!$userProfile) {
-        return response()->json(['error' => 'User profile not found'], 404);
-    }
-
-    // Update balance based on transaction type
-    if ($request->type === 'purchased' || $request->type === 'credit') {
-        $newAvailableBalance = $userProfile->available_balance + $quantity;
-    } elseif ($request->type === 'used') {
-        if ($userProfile->available_balance < $quantity) {
-            return response()->json(['error' => 'Insufficient balance'], 422);
+        // Fetch user profile
+        $userProfile = User_profile::where('user_id', $request->user_id)->first();
+        if (!$userProfile) {
+            return response()->json(['error' => 'User profile not found'], 404);
         }
-        $newAvailableBalance = $userProfile->available_balance - $quantity;
+
+        // Update balance based on transaction type
+        if ($request->type === 'purchased' || $request->type === 'credit') {
+            $newAvailableBalance = $userProfile->available_balance + $quantity;
+        } elseif ($request->type === 'used') {
+            if ($userProfile->available_balance < $quantity) {
+                return response()->json(['error' => 'Insufficient balance'], 422);
+            }
+            $newAvailableBalance = $userProfile->available_balance - $quantity;
+        }
+
+        // Update user's available balance
+        $userProfile->update(['available_balance' => $newAvailableBalance]);
+
+        return response()->json(['message' => 'Service transaction created successfully', 'data' => $serviceTransaction], 201);
     }
-
-    // Update user's available balance
-    $userProfile->update(['available_balance' => $newAvailableBalance]);
-
-    return response()->json(['message' => 'Service transaction created successfully', 'data' => $serviceTransaction], 201);
-}
 
 
 
@@ -298,9 +358,9 @@ class ServiceTransactionController extends Controller
 
             // Fetch the service details
             $service = $transaction->service_id
-            ? Service::select('id as _id', 'serviceName', 'price')
+                ? Service::select('id as _id', 'serviceName', 'price')
                 ->find($transaction->service_id)
-            : null;
+                : null;
 
             // Add the transaction data to the result array
             $result[] = [
@@ -700,121 +760,120 @@ class ServiceTransactionController extends Controller
     }
 
     public function servicePurchase(Request $request)
-{
-    try {
-        // Validate request parameters
-        $validatedData = $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date',
-            'location_id' => 'nullable|integer|exists:locations,id', // Optional location filter
-        ]);
+    {
+        try {
+            // Validate request parameters
+            $validatedData = $request->validate([
+                'start_date' => 'required|date',
+                'end_date' => 'required|date',
+                'location_id' => 'nullable|integer|exists:locations,id', // Optional location filter
+            ]);
 
-        $startDate = $validatedData['start_date'] . ' 00:00:00';
-        $endDate = $validatedData['end_date'] . ' 23:59:59';
-        $locationId = $validatedData['location_id'] ?? null;
+            $startDate = $validatedData['start_date'] . ' 00:00:00';
+            $endDate = $validatedData['end_date'] . ' 23:59:59';
+            $locationId = $validatedData['location_id'] ?? null;
 
-        // Start the transaction query
-        $transactionsQuery = ServiceTransaction::where('type', 'purchased');
+            // Start the transaction query
+            $transactionsQuery = ServiceTransaction::where('type', 'purchased');
 
-        // Check if start and end dates are the same
-        if ($startDate === $endDate) {
-            // If same date, use whereDate to match only that specific date
-            $transactionsQuery->whereDate('created_at', $startDate);
-        } else {
-            // Otherwise, use whereBetween for the date range
-            $transactionsQuery->whereBetween('created_at', [$startDate, $endDate]);
+            // Check if start and end dates are the same
+            if ($startDate === $endDate) {
+                // If same date, use whereDate to match only that specific date
+                $transactionsQuery->whereDate('created_at', $startDate);
+            } else {
+                // Otherwise, use whereBetween for the date range
+                $transactionsQuery->whereBetween('created_at', [$startDate, $endDate]);
+            }
+
+            // Filter by location_id if provided and not zero
+            if (!is_null($locationId) && $locationId !== 0) {
+                $transactionsQuery->where('location', $locationId);
+            }
+
+            // Execute the query to get the filtered transactions
+            $transactions = $transactionsQuery->get();
+
+            // Prepare to group data
+            $groupedData = [];
+
+            // Get unique location IDs from the transactions
+            $locationIds = $transactions->pluck('location')->unique();
+
+            // Fetch all services and locations in a single query
+            $serviceIds = $transactions->pluck('service_id')->unique();
+            $services = Service::whereIn('id', $serviceIds)->get()->keyBy('id');
+            $locations = Location::whereIn('id', $locationIds)->get()->keyBy('id');
+
+            // Loop through each transaction to group them by location and service name
+            foreach ($transactions as $transaction) {
+                $locationId = $transaction->location;
+                $serviceId = $transaction->service_id;
+
+                $service = $services->get($serviceId);
+                if (!$service) {
+                    continue; // Skip if service not found
+                }
+
+                $serviceName = $service->serviceName;
+                $price = $service->price;
+                $date = $transaction->created_at->format('Y-m-d');
+
+                // Ensure location exists before accessing its properties
+                $location = $locations->get($locationId);
+                if (!$location) {
+                    continue; // Skip if location not found
+                }
+
+                if (!isset($groupedData[$locationId])) {
+                    $groupedData[$locationId] = [
+                        'location' => [
+                            'id' => $locationId,
+                            'name' => $location->name,
+                            'address' => $location->address,
+                            'city' => $location->city,
+                            'phone_number' => $location->phone_number,
+                            'post_code' => $location->post_code,
+                        ],
+                        'services' => [],
+                    ];
+                }
+
+                if (!isset($groupedData[$locationId]['services'][$serviceName])) {
+                    $groupedData[$locationId]['services'][$serviceName] = [
+                        'total_quantity' => 0,
+                        'total_price' => 0,
+                        'last_transaction_date' => $date,
+                    ];
+                }
+
+                $groupedData[$locationId]['services'][$serviceName]['total_quantity'] += $transaction->quantity;
+                $groupedData[$locationId]['services'][$serviceName]['total_price'] += $price;
+                $currentTransactionDate = $transaction->created_at->format('Y-m-d');
+                if ($currentTransactionDate > $groupedData[$locationId]['services'][$serviceName]['last_transaction_date']) {
+                    $groupedData[$locationId]['services'][$serviceName]['last_transaction_date'] = $currentTransactionDate;
+                }
+            }
+
+            $result = [];
+            foreach ($groupedData as $location) {
+                foreach ($location['services'] as $serviceName => $service) {
+                    $result[] = [
+                        'location' => $location['location'],
+                        'serviceName' => $serviceName,
+                        'total_quantity' => $service['total_quantity'],
+                        'total_price' => $service['total_price'],
+                        'date' => $service['last_transaction_date'],
+                    ];
+                }
+            }
+
+            return response()->json($result);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Validation failed', 'details' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An unexpected error occurred', 'message' => $e->getMessage()], 500);
         }
-
-        // Filter by location_id if provided and not zero
-        if (!is_null($locationId) && $locationId !== 0) {
-            $transactionsQuery->where('location', $locationId);
-        }
-
-        // Execute the query to get the filtered transactions
-        $transactions = $transactionsQuery->get();
-
-        // Prepare to group data
-        $groupedData = [];
-
-        // Get unique location IDs from the transactions
-        $locationIds = $transactions->pluck('location')->unique();
-
-        // Fetch all services and locations in a single query
-        $serviceIds = $transactions->pluck('service_id')->unique();
-        $services = Service::whereIn('id', $serviceIds)->get()->keyBy('id');
-        $locations = Location::whereIn('id', $locationIds)->get()->keyBy('id');
-
-        // Loop through each transaction to group them by location and service name
-        foreach ($transactions as $transaction) {
-            $locationId = $transaction->location;
-            $serviceId = $transaction->service_id;
-
-            $service = $services->get($serviceId);
-            if (!$service) {
-                continue; // Skip if service not found
-            }
-
-            $serviceName = $service->serviceName;
-            $price = $service->price;
-            $date = $transaction->created_at->format('Y-m-d');
-
-            // Ensure location exists before accessing its properties
-            $location = $locations->get($locationId);
-            if (!$location) {
-                continue; // Skip if location not found
-            }
-
-            if (!isset($groupedData[$locationId])) {
-                $groupedData[$locationId] = [
-                    'location' => [
-                        'id' => $locationId,
-                        'name' => $location->name,
-                        'address' => $location->address,
-                        'city' => $location->city,
-                        'phone_number' => $location->phone_number,
-                        'post_code' => $location->post_code,
-                    ],
-                    'services' => [],
-                ];
-            }
-
-            if (!isset($groupedData[$locationId]['services'][$serviceName])) {
-                $groupedData[$locationId]['services'][$serviceName] = [
-                    'total_quantity' => 0,
-                    'total_price' => 0,
-                    'last_transaction_date' => $date,
-                ];
-            }
-
-            $groupedData[$locationId]['services'][$serviceName]['total_quantity'] += $transaction->quantity;
-            $groupedData[$locationId]['services'][$serviceName]['total_price'] += $price;
-            $currentTransactionDate = $transaction->created_at->format('Y-m-d');
-            if ($currentTransactionDate > $groupedData[$locationId]['services'][$serviceName]['last_transaction_date']) {
-                $groupedData[$locationId]['services'][$serviceName]['last_transaction_date'] = $currentTransactionDate;
-            }
-        }
-
-        $result = [];
-        foreach ($groupedData as $location) {
-            foreach ($location['services'] as $serviceName => $service) {
-                $result[] = [
-                    'location' => $location['location'],
-                    'serviceName' => $serviceName,
-                    'total_quantity' => $service['total_quantity'],
-                    'total_price' => $service['total_price'],
-                    'date' => $service['last_transaction_date'],
-                ];
-            }
-        }
-
-        return response()->json($result);
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json(['error' => 'Validation failed', 'details' => $e->errors()], 422);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'An unexpected error occurred', 'message' => $e->getMessage()], 500);
     }
-}
 
 
 
@@ -1032,47 +1091,43 @@ class ServiceTransactionController extends Controller
 
 
     public function customerDayUsage(Request $request)
-{
-    $validatedData = $request->validate([
-        'start_date' => 'required|date',
-        'end_date' => 'required|date',
-        'location_id' => 'nullable|integer',
-    ]);
+    {
+        $validatedData = $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+            'location_id' => 'nullable|integer',
+        ]);
 
-    // Format start and end dates to cover the full day range
-    $startDate = $validatedData['start_date'] . ' 00:00:00';
-    $endDate = $validatedData['end_date'] . ' 23:59:59';
+        // Format start and end dates to cover the full day range
+        $startDate = $validatedData['start_date'] . ' 00:00:00';
+        $endDate = $validatedData['end_date'] . ' 23:59:59';
 
-    // Fetch transactions with aggregated user count, filtering by date and location if provided
-    $query = ServiceTransaction::selectRaw('DATE(created_at) as date, location, COUNT(DISTINCT user_id) as user_count')
-        ->where('type', 'used')
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->groupBy('date', 'location');
+        // Fetch transactions with aggregated user count, filtering by date and location if provided
+        $query = ServiceTransaction::selectRaw('DATE(created_at) as date, location, COUNT(DISTINCT user_id) as user_count')
+            ->where('type', 'used')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('date', 'location');
 
-    // Apply location filter if location_id is provided
-    if (!is_null($validatedData['location_id'])) {
-        $query->where('location', $validatedData['location_id']);
+        // Apply location filter if location_id is provided
+        if (!is_null($validatedData['location_id'])) {
+            $query->where('location', $validatedData['location_id']);
+        }
+
+        $result = $query->get();
+
+        // Retrieve location names in a single query to avoid looping calls
+        $locationNames = Location::whereIn('id', $result->pluck('location'))->pluck('name', 'id');
+
+        // Prepare final data array
+        $data = $result->map(function ($re) use ($locationNames) {
+            return [
+                'date' => $re->date,
+                'location_id' => $re->location,
+                'location' => $locationNames[$re->location] ?? null, // Fallback if location name is missing
+                'userCount' => $re->user_count,
+            ];
+        });
+
+        return response()->json(['data' => $data]);
     }
-
-    $result = $query->get();
-
-    // Retrieve location names in a single query to avoid looping calls
-    $locationNames = Location::whereIn('id', $result->pluck('location'))->pluck('name', 'id');
-
-    // Prepare final data array
-    $data = $result->map(function ($re) use ($locationNames) {
-        return [
-            'date' => $re->date,
-            'location_id' => $re->location,
-            'location' => $locationNames[$re->location] ?? null, // Fallback if location name is missing
-            'userCount' => $re->user_count,
-        ];
-    });
-
-    return response()->json(['data' => $data]);
-}
-
-        
-
-   
 }

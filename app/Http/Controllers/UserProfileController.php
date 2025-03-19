@@ -385,6 +385,60 @@ class UserProfileController extends Controller
      *     )
      * )
      */
+    /**
+     * @OA\Get(
+     *     path="/api/stats/{id}",
+     *     summary="Get statistics for a specific location or globally",
+     *     description="Retrieves statistics including counts of locations, customers, products, services, and transaction totals. If id=0, global stats are returned; otherwise, stats for the specified location are returned.",
+     *     operationId="getStats",
+     *     tags={"Stats"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Location ID (use 0 for global stats)",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 oneOf={
+     *                     @OA\Schema(
+     *                         @OA\Property(property="locations", type="integer", example=5),
+     *                         @OA\Property(property="customers", type="integer", example=100),
+     *                         @OA\Property(property="products", type="integer", example=50),
+     *                         @OA\Property(property="services", type="integer", example=20),
+     *                         @OA\Property(property="serviceTransactionTotalToday", type="integer", example=150),
+     *                         @OA\Property(property="productTransactionTotalToday", type="number", format="float", example=250.50),
+     *                         @OA\Property(property="customerServiceToday", type="integer", example=30)
+     *                     ),
+     *                     @OA\Schema(
+     *                         @OA\Property(property="location", type="string", example="Main Branch"),
+     *                         @OA\Property(property="customers", type="integer", example=20),
+     *                         @OA\Property(property="products", type="integer", example=10),
+     *                         @OA\Property(property="services", type="integer", example=5),
+     *                         @OA\Property(property="serviceTransactionTotalToday", type="integer", example=30),
+     *                         @OA\Property(property="productTransactionTotalToday", type="number", format="float", example=75.25),
+     *                         @OA\Property(property="customerServiceToday", type="integer", example=8)
+     *                     )
+     *                 }
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Location not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Location not found")
+     *         )
+     *     )
+     * )
+     */
     public function stats($id)
     {
         // Determine if we're fetching global or location-specific stats
@@ -392,67 +446,82 @@ class UserProfileController extends Controller
         $todayStart = now()->startOfDay();
         $todayEnd = now()->endOfDay();
 
-        // Execute the query using DB::selectOne
-        $stats = DB::selectOne("
-        SELECT
-            (SELECT COUNT(*) FROM locations) AS locations_count,
-            (SELECT COUNT(*) FROM users WHERE role = ?) AS customers_count,
-            (SELECT COUNT(*) FROM products) AS products_count,
-            (SELECT COUNT(*) FROM services) AS services_count,
-            COALESCE((
-                SELECT SUM(st.quantity)
-                FROM service_transactions st
-                WHERE st.type = ?
-                AND st.created_at >= ?
-                AND st.created_at < ?
-                AND (? OR st.location = ?)
-            ), 0) AS service_transaction_total_today,
-            COALESCE((
-                SELECT SUM(s.price)
-                FROM service_transactions st
-                JOIN services s ON s.id = st.service_id
-                WHERE st.type = ?
-                AND st.created_at >= ?
-                AND st.created_at < ?
-                AND (? OR st.location = ?)
-            ), 0) AS service_transaction_price_total_today,
-            COALESCE((
-                SELECT SUM(pt.quantity * p.price)
-                FROM product_transaction pt
-                JOIN products p ON p.id = pt.product_id
-                WHERE pt.created_at >= ?
-                AND pt.created_at < ?
-                AND (? OR pt.location_id = ?)
-            ), 0) AS product_transaction_total_today,
-            (SELECT COUNT(DISTINCT st.user_id)
-             FROM service_transactions st
-             WHERE st.type = ?
-             AND st.created_at >= ?
-             AND st.created_at < ?
-             AND (? OR st.location = ?)
-            ) AS total_unique_customers_today
-    ", [
-            'customer', // for customers_count
-            'used',
-            $todayStart,
-            $todayEnd,
-            $isGlobal,
-            $id, // for service_transaction_total_today
-            'purchased',
-            $todayStart,
-            $todayEnd,
-            $isGlobal,
-            $id, // for service_transaction_price_total_today
-            $todayStart,
-            $todayEnd,
-            $isGlobal,
-            $id, // for product_transaction_total_today
-            'used',
-            $todayStart,
-            $todayEnd,
-            $isGlobal,
-            $id // for total_unique_customers_today
-        ]);
+        try {
+            // Execute the query using DB::selectOne
+            $stats = DB::selectOne("
+            SELECT
+                (SELECT COUNT(*) FROM locations) AS locations_count,
+                -- Count customers based on preferred_location in user_profiles
+                (
+                    SELECT COUNT(DISTINCT u.id)
+                    FROM users u
+                    JOIN user_profiles up ON up.user_id = u.id
+                    WHERE u.role = ?
+                    AND (? OR up.preferred_location = ?)
+                ) AS customers_count,
+                (SELECT COUNT(*) FROM products) AS products_count,
+                (SELECT COUNT(*) FROM services) AS services_count,
+                COALESCE((
+                    SELECT SUM(st.quantity)
+                    FROM service_transactions st
+                    WHERE st.type = ?
+                    AND st.created_at >= ?
+                    AND st.created_at < ?
+                    AND (? OR st.location = ?)
+                ), 0) AS service_transaction_total_today,
+                COALESCE((
+                    SELECT SUM(s.price)
+                    FROM service_transactions st
+                    JOIN services s ON s.id = st.service_id
+                    WHERE st.type = ?
+                    AND st.created_at >= ?
+                    AND st.created_at < ?
+                    AND (? OR st.location = ?)
+                ), 0) AS service_transaction_price_total_today,
+                COALESCE((
+                    SELECT SUM(pt.quantity * p.price)
+                    FROM product_transaction pt
+                    JOIN products p ON p.id = pt.product_id
+                    WHERE pt.created_at >= ?
+                    AND pt.created_at < ?
+                    AND (? OR pt.location_id = ?)
+                ), 0) AS product_transaction_total_today,
+                (SELECT COUNT(DISTINCT st.user_id)
+                 FROM service_transactions st
+                 WHERE st.type = ?
+                 AND st.created_at >= ?
+                 AND st.created_at < ?
+                 AND (? OR st.location = ?)
+                ) AS total_unique_customers_today
+        ", [
+                'customer',
+                $isGlobal,
+                $id, // for customers_count
+                'used',
+                $todayStart,
+                $todayEnd,
+                $isGlobal,
+                $id, // for service_transaction_total_today
+                'purchased',
+                $todayStart,
+                $todayEnd,
+                $isGlobal,
+                $id, // for service_transaction_price_total_today
+                $todayStart,
+                $todayEnd,
+                $isGlobal,
+                $id, // for product_transaction_total_today
+                'used',
+                $todayStart,
+                $todayEnd,
+                $isGlobal,
+                $id // for total_unique_customers_today
+            ]);
+        } finally {
+            // Close the database connection dynamically
+            $connectionName = DB::getDefaultConnection();
+            DB::disconnect($connectionName);
+        }
 
         // Prepare the response based on whether it's global or location-specific
         if ($isGlobal) {
@@ -472,6 +541,10 @@ class UserProfileController extends Controller
                 return response()->json(['message' => 'Location not found'], 404);
             }
 
+            // Close the connection after the Location query
+            $connectionName = (new Location())->getConnectionName();
+            DB::disconnect($connectionName);
+
             $data = [
                 'location' => $location->name,
                 'customers' => (int)$stats->customers_count,
@@ -485,11 +558,6 @@ class UserProfileController extends Controller
 
         return response()->json(['data' => $data]);
     }
-
-
-
-
-
 
     public function clearData()
     {

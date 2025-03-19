@@ -141,19 +141,15 @@ class AuthController extends Controller
         }
 
         $user = JWTAuth::user();
+        $profile = User_profile::where('user_id', $user->id)->first();
+        $location = Location::find($profile->preferred_location);
 
-        // if (!$user->hasVerifiedEmail()) {
-        //     return response()->json(['error' => 'Email not verified'], 403);
-        // }
-
-        // $profile = User_profile::where('user_id',$user->id)->first();
-        // $location = Location::find($profile->preferred_location);
-        // $data = [
-        //     'location'
-        // ]
-
-
-        return $this->respondWithToken($token);
+        return response()->json([
+            'access_token' => $token,
+            'id' => $user->id,
+            'name' => $profile->firstName . " " . $profile->lastName,
+            'preferred_location' => $location ? $location->name : null
+        ]);
     }
 
     /**

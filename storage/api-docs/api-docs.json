@@ -1891,12 +1891,129 @@
                 "tags": [
                     "Service Transactions"
                 ],
-                "summary": "Get all service transactions",
-                "description": "Retrieve a list of all service transactions.",
-                "operationId": "2ef3cb2de793e76702064a36d46bbb91",
+                "summary": "Get all service transactions with user, location, and service details",
+                "description": "Retrieves a list of all service transactions, including user profile details, preferred location details, and service details (if applicable).",
+                "operationId": "getServiceTransactions",
                 "responses": {
                     "200": {
-                        "description": "Successful operation"
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "user_details": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "firstName": {
+                                                        "type": "string",
+                                                        "example": "John"
+                                                    },
+                                                    "lastName": {
+                                                        "type": "string",
+                                                        "example": "Doe"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "john.doe@example.com"
+                                                    },
+                                                    "phone_number": {
+                                                        "type": "string",
+                                                        "example": "1234567890"
+                                                    },
+                                                    "available_balance": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 100.5
+                                                    },
+                                                    "preferred_location": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Main Branch"
+                                                            },
+                                                            "address": {
+                                                                "type": "string",
+                                                                "example": "123 Main St"
+                                                            },
+                                                            "city": {
+                                                                "type": "string",
+                                                                "example": "New York"
+                                                            },
+                                                            "phone_number": {
+                                                                "type": "string",
+                                                                "example": "9876543210"
+                                                            },
+                                                            "post_code": {
+                                                                "type": "string",
+                                                                "example": "10001"
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "service": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Tanning Session"
+                                                    },
+                                                    "price": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 25
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "transaction": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "quantity": {
+                                                        "type": "integer",
+                                                        "example": 2
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "example": "used"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-03-19T10:00:00Z"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-03-19T10:00:00Z"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -2577,20 +2694,19 @@
         "/api/stats/{id}": {
             "get": {
                 "tags": [
-                    "Statistics"
+                    "Stats"
                 ],
-                "summary": "Get statistics for all locations or a specific location",
-                "description": "Retrieves statistics including counts of locations, customers, products, services, and transaction totals for the current day. If id is 0, returns global stats; otherwise, returns stats for the specified location.",
+                "summary": "Get statistics for a specific location or globally",
+                "description": "Retrieves statistics including counts of locations, customers, products, services, and transaction totals. If id=0, global stats are returned; otherwise, stats for the specified location are returned.",
                 "operationId": "getStats",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Location ID (0 for global stats, or a specific location ID)",
+                        "description": "Location ID (use 0 for global stats)",
                         "required": true,
                         "schema": {
-                            "type": "integer",
-                            "example": 0
+                            "type": "integer"
                         }
                     }
                 ],
@@ -2642,7 +2758,7 @@
                                                     "properties": {
                                                         "location": {
                                                             "type": "string",
-                                                            "example": "Location Name"
+                                                            "example": "Main Branch"
                                                         },
                                                         "customers": {
                                                             "type": "integer",
@@ -2785,8 +2901,8 @@
             "description": "User Profiles"
         },
         {
-            "name": "Statistics",
-            "description": "Statistics"
+            "name": "Stats",
+            "description": "Stats"
         }
     ]
 }
