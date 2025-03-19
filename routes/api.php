@@ -60,6 +60,7 @@ Route::post('getUserd',[AuthController::class,'getUserd']);
 Route::post('/customerDayUsage',[ServiceTransactionController::class,'customerDayUsage']);
 Route::get('/customers/search', [CustomerController::class, 'searchCustomers']);
 Route::post('/customers/date-range', [CustomerController::class, 'customerDateRange']);
+Route::get('/users', [CustomerController::class, 'getAllUsers']);
 
 Route::group(['middleware' => 'auth:api'], function () {
     Route::post('logout', [AuthController::class, 'logout']);

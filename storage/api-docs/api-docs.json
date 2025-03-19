@@ -1111,6 +1111,88 @@
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all customers with their usage and purchase details",
+                "description": "Retrieves a list of users with role 'customer', including their profile details, total used minutes, and total purchased service/product prices.",
+                "operationId": "getAllUsers",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 2258
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Ruby White"
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "example": "ruby2pro@gmail.com"
+                                            },
+                                            "role": {
+                                                "type": "string",
+                                                "example": "customer"
+                                            },
+                                            "address": {
+                                                "type": "string",
+                                                "example": "Connerways Intern Lane Madge..."
+                                            },
+                                            "phone_number": {
+                                                "type": "string",
+                                                "example": "07541888560",
+                                                "nullable": true
+                                            },
+                                            "total_used_minutes": {
+                                                "type": "integer",
+                                                "example": 0
+                                            },
+                                            "total_service_purchased_price": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0
+                                            },
+                                            "total_product_purchased_price": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": false
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/locations": {
             "get": {
                 "tags": [

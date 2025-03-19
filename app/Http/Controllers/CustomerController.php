@@ -11,6 +11,8 @@ use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use PDO;
+use PDOException;
 
 class CustomerController extends Controller
 {
@@ -222,122 +224,121 @@ class CustomerController extends Controller
      * )
      */
 
-     public function searchCustomers(Request $request)
-     {
-         // Initialize base query for customers
-         $query = User::where('role', 'customer')->orderBy('id');
+    public function searchCustomers(Request $request)
+    {
+        // Initialize base query for customers
+        $query = User::where('role', 'customer')->orderBy('id');
 
-         // Apply email filter if provided
-         if ($request->has('email')) {
-             $query->where('email', 'like', '%' . $request->input('email') . '%');
-         }
+        // Apply email filter if provided
+        if ($request->has('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
 
-         // Set up profile query for filtering by profile fields
-         $profileQuery = DB::table('user_profiles');
-         $hasValidFilter = false;
+        // Set up profile query for filtering by profile fields
+        $profileQuery = DB::table('user_profiles');
+        $hasValidFilter = false;
 
-         // Apply location filter with key search
-         if ($request->has('locationId')) {
+        // Apply location filter with key search
+        if ($request->has('locationId')) {
 
-                 $hasValidFilter = true;
-                 if ($request->has('key') && $request->input('key') !== '') {
-                     $key = '%' . $request->input('key') . '%';
-                     $profileQuery->where('preferred_location', $request->input('locationId') ? $request->input('locationId'):null)
-                         ->where(function ($q) use ($key) {
-                             $q->where('firstName', 'like', $key)
-                                 ->orWhere('lastName', 'like', $key)
-                                 ->orWhere('phone_number', 'like', $key);
-                         });
-                 } else {
-                     // When key is empty or not provided, filter only by locationId (including '0')
-                     $profileQuery->where('preferred_location', $request->input('locationId'));
-                 }
+            $hasValidFilter = true;
+            if ($request->has('key') && $request->input('key') !== '') {
+                $key = '%' . $request->input('key') . '%';
+                $profileQuery->where('preferred_location', $request->input('locationId') ? $request->input('locationId') : null)
+                    ->where(function ($q) use ($key) {
+                        $q->where('firstName', 'like', $key)
+                            ->orWhere('lastName', 'like', $key)
+                            ->orWhere('phone_number', 'like', $key);
+                    });
+            } else {
+                // When key is empty or not provided, filter only by locationId (including '0')
+                $profileQuery->where('preferred_location', $request->input('locationId'));
+            }
+        } else {
+            // Apply single key search across multiple profile fields
+            if ($request->has('key')) {
+                if ($request->input('key') !== '') {
+                    $hasValidFilter = true;
+                    $key = '%' . $request->input('key') . '%';
+                    $profileQuery->where(function ($q) use ($key) {
+                        $q->where('firstName', 'like', $key)
+                            ->orWhere('lastName', 'like', $key)
+                            ->orWhere('phone_number', 'like', $key);
+                    });
+                } else {
+                    // Return empty when key is empty and no locationId
+                    return response()->json(['data' => []]);
+                }
+            } else {
+                // Return empty when no key is provided and no locationId
+                return response()->json(['data' => []]);
+            }
+        }
 
-         } else {
-             // Apply single key search across multiple profile fields
-             if ($request->has('key')) {
-                 if ($request->input('key') !== '') {
-                     $hasValidFilter = true;
-                     $key = '%' . $request->input('key') . '%';
-                     $profileQuery->where(function ($q) use ($key) {
-                         $q->where('firstName', 'like', $key)
-                             ->orWhere('lastName', 'like', $key)
-                             ->orWhere('phone_number', 'like', $key);
-                     });
-                 } else {
-                     // Return empty when key is empty and no locationId
-                     return response()->json(['data' => []]);
-                 }
-             } else {
-                 // Return empty when no key is provided and no locationId
-                 return response()->json(['data' => []]);
-             }
-         }
+        // If no valid filters are applied (besides email), return empty result
+        if (!$hasValidFilter && !$request->has('email')) {
+            return response()->json(['data' => []]);
+        }
 
-         // If no valid filters are applied (besides email), return empty result
-         if (!$hasValidFilter && !$request->has('email')) {
-             return response()->json(['data' => []]);
-         }
+        // Apply profile filters to main query if any exist
+        if ($hasValidFilter) {
+            $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
+            if (empty($matchingUserIds)) {
+                return response()->json(['data' => []]);
+            }
+            $query->whereIn('id', $matchingUserIds);
+        }
 
-         // Apply profile filters to main query if any exist
-         if ($hasValidFilter) {
-             $matchingUserIds = $profileQuery->pluck('user_id')->toArray();
-             if (empty($matchingUserIds)) {
-                 return response()->json(['data' => []]);
-             }
-             $query->whereIn('id', $matchingUserIds);
-         }
+        // Execute query and get results
+        $users = $query->get();
+        $usersWithProfiles = [];
 
-         // Execute query and get results
-         $users = $query->get();
-         $usersWithProfiles = [];
+        // Process each user and calculate totals
+        foreach ($users as $user) {
+            $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
 
-         // Process each user and calculate totals
-         foreach ($users as $user) {
-             $profile = DB::table('user_profiles')->where('user_id', $user->id)->first();
+            // Calculate total used minutes from service transactions
+            $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
+                ->where('type', 'used')
+                ->sum('quantity');
 
-             // Calculate total used minutes from service transactions
-             $totalUsedMinutes = ServiceTransaction::where('user_id', $user->id)
-                 ->where('type', 'used')
-                 ->sum('quantity');
+            // Calculate total service purchase price
+            $totalServicePurchasedPrice = ServiceTransaction::where('user_id', $user->id)
+                ->where('type', 'purchased')
+                ->get()
+                ->sum(function ($transaction) {
+                    $service = Service::find($transaction->service_id);
+                    return $service ? $service->price : 0;
+                });
 
-             // Calculate total service purchase price
-             $totalServicePurchasedPrice = ServiceTransaction::where('user_id', $user->id)
-                 ->where('type', 'purchased')
-                 ->get()
-                 ->sum(function ($transaction) {
-                     $service = Service::find($transaction->service_id);
-                     return $service ? $service->price : 0;
-                 });
+            // Calculate total product purchase price
+            $totalProductPurchasedPrice = ProductTransaction::where('user_id', $user->id)
+                ->get()
+                ->sum(function ($transaction) {
+                    $product = Product::find($transaction->product_id);
+                    return $product ? $transaction->quantity * $product->price : 0;
+                });
 
-             // Calculate total product purchase price
-             $totalProductPurchasedPrice = ProductTransaction::where('user_id', $user->id)
-                 ->get()
-                 ->sum(function ($transaction) {
-                     $product = Product::find($transaction->product_id);
-                     return $product ? $transaction->quantity * $product->price : 0;
-                 });
+            $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
 
-             $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
+            // Apply minimum total filter if specified
+            if ($request->has('min_total') && $totalPrice < $request->input('min_total')) {
+                continue;
+            }
 
-             // Apply minimum total filter if specified
-             if ($request->has('min_total') && $totalPrice < $request->input('min_total')) {
-                 continue;
-             }
+            // Build result array for each user
+            $usersWithProfiles[] = [
+                'user' => $user,
+                'profile' => $profile,
+                'total_used_minutes' => $totalUsedMinutes,
+                'total_service_purchased_price' => $totalServicePurchasedPrice,
+                'total_product_purchased_price' => $totalProductPurchasedPrice,
+                'total_price' => $totalPrice
+            ];
+        }
 
-             // Build result array for each user
-             $usersWithProfiles[] = [
-                 'user' => $user,
-                 'profile' => $profile,
-                 'total_used_minutes' => $totalUsedMinutes,
-                 'total_service_purchased_price' => $totalServicePurchasedPrice,
-                 'total_product_purchased_price' => $totalProductPurchasedPrice,
-                 'total_price' => $totalPrice
-             ];
-         }
-
-         return response()->json(['data' => $usersWithProfiles]);
-     }
+        return response()->json(['data' => $usersWithProfiles]);
+    }
 
     /**
      * Get customers with transaction data within a date range using page-based pagination
@@ -533,5 +534,78 @@ class CustomerController extends Controller
                 'to' => $offset + count($usersWithProfiles)
             ]
         ]);
+    }
+
+
+    /**
+     * @OA\Get(
+     *     path="/api/users",
+     *     summary="Get all customers with their usage and purchase details",
+     *     description="Retrieves a list of users with role 'customer', including their profile details, total used minutes, and total purchased service/product prices.",
+     *     operationId="getAllUsers",
+     *     tags={"Users"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer", example=2258),
+     *                 @OA\Property(property="name", type="string", example="Ruby White"),
+     *                 @OA\Property(property="email", type="string", example="ruby2pro@gmail.com"),
+     *                 @OA\Property(property="role", type="string", example="customer"),
+     *                 @OA\Property(property="address", type="string", example="Connerways Intern Lane Madge..."),
+     *                 @OA\Property(property="phone_number", type="string", example="07541888560", nullable=true),
+     *                 @OA\Property(property="total_used_minutes", type="integer", example=0),
+     *                 @OA\Property(property="total_service_purchased_price", type="number", format="float", example=0.00),
+     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example=0.00)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="boolean", example=false)
+     *         )
+     *     )
+     * )
+     */
+    public function getAllUsers()
+    {
+        try {
+            $results = DB::table('users as u')
+                ->select(
+                    'u.id',
+                    'u.name',
+                    'u.email',
+                    'u.role',
+                    'up.address',
+                    'up.phone_number',
+                    DB::raw('COALESCE(SUM(CASE WHEN st.type = \'used\' THEN st.quantity ELSE 0 END), 0) as total_used_minutes'),
+                    DB::raw('COALESCE(SUM(CASE WHEN st.type = \'purchased\' THEN s.price ELSE 0 END), 0) as total_service_purchased_price'),
+                    DB::raw('COALESCE(SUM(pt.quantity * p.price), 0) as total_product_purchased_price')
+                )
+                ->leftJoin('user_profiles as up', 'up.user_id', '=', 'u.id')
+                ->leftJoin('service_transactions as st', 'st.user_id', '=', 'u.id')
+                ->leftJoin('services as s', function ($join) {
+                    $join->on('s.id', '=', 'st.service_id')
+                        ->where('st.type', '=', 'purchased');
+                })
+                ->leftJoin('product_transaction as pt', 'pt.user_id', '=', 'u.id')
+                ->leftJoin('products as p', 'p.id', '=', 'pt.product_id')
+                ->where('u.role', 'customer')
+                ->groupBy('u.id', 'u.name', 'u.email', 'u.role', 'up.address', 'up.phone_number')
+                ->orderBy('u.id')
+                ->get();
+
+            return $results;
+        } catch (\Exception $e) {
+            // Log the error
+            Log::error('Error fetching users: ' . $e->getMessage());
+            return false;
+        }
     }
 }
