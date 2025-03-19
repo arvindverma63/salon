@@ -578,9 +578,9 @@ class CustomerController extends Controller
      *                     @OA\Property(property="post_code", type="string", example="AB12 3CD", nullable=true)
      *                 ),
      *                 @OA\Property(property="total_used_minutes", type="integer", example=0),
-     *                 @OA\Property(property="total_service_purchased_price", type="number", format="float", example=0.00),
-     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example=0.00),
-     *                 @OA\Property(property="total_price", type="number", format="float", example=0.00)
+     *                 @OA\Property(property="total_service_purchased_price", type="number", format="float", example="0.00"),
+     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example="0.00"),
+     *                 @OA\Property(property="total_price", type="number", format="float", example="0.00")
      *             )
      *         )
      *     ),
@@ -678,16 +678,16 @@ class CustomerController extends Controller
                 ];
 
                 $totalUsedMinutes = $result->total_used_minutes;
-                $totalServicePurchasedPrice = $result->total_service_purchased_price;
-                $totalProductPurchasedPrice = $result->total_product_purchased_price;
-                $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
+                $totalServicePurchasedPrice = number_format((float)$result->total_service_purchased_price, 2, '.', '');
+                $totalProductPurchasedPrice = number_format((float)$result->total_product_purchased_price, 2, '.', '');
+                $totalPrice = number_format((float)($totalServicePurchasedPrice + $totalProductPurchasedPrice), 2, '.', '');
 
                 return [
                     'user' => $user,
                     'profile' => $profile,
                     'total_used_minutes' => $totalUsedMinutes,
-                    'total_service_purchased_price' => number_format((float)$totalServicePurchasedPrice, 2, '.', ''),
-                    'total_product_purchased_price' => number_format((float)$totalProductPurchasedPrice, 2, '.', ''),
+                    'total_service_purchased_price' => $totalServicePurchasedPrice,
+                    'total_product_purchased_price' => $totalProductPurchasedPrice,
                     'total_price' => $totalPrice,
                 ];
             })->all();

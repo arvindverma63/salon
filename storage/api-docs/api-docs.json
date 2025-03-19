@@ -1223,17 +1223,17 @@
                                             "total_service_purchased_price": {
                                                 "type": "number",
                                                 "format": "float",
-                                                "example": 0
+                                                "example": "0.00"
                                             },
                                             "total_product_purchased_price": {
                                                 "type": "number",
                                                 "format": "float",
-                                                "example": 0
+                                                "example": "0.00"
                                             },
                                             "total_price": {
                                                 "type": "number",
                                                 "format": "float",
-                                                "example": 0
+                                                "example": "0.00"
                                             }
                                         },
                                         "type": "object"
