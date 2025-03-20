@@ -57,6 +57,9 @@ Route::post('/customerDayUsage',[ServiceTransactionController::class,'customerDa
 Route::get('/customers/search', [CustomerController::class, 'searchCustomers']);
 Route::post('/customers/date-range', [CustomerController::class, 'customerDateRange']);
 Route::get('/users', [CustomerController::class, 'getAllUsers']);
+Route::get('/system-users', [CustomerController::class, 'getAllSystemUsers']);
+
+
 
 Route::group(['middleware' => 'auth:api'], function () {
     Route::post('logout', [AuthController::class, 'logout']);

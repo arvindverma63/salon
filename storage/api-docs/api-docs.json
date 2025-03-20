@@ -1271,6 +1271,170 @@
                 }
             }
         },
+        "/api/system-users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all System users with their usage and purchase details",
+                "description": "Retrieves a list of users with role 'customer', including their profile details, total used minutes, and total purchased service/product prices.",
+                "operationId": "getAllSystemUser",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "user": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 2258
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Ruby White"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "ruby2pro@gmail.com"
+                                                    },
+                                                    "role": {
+                                                        "type": "string",
+                                                        "example": "customer"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "profile": {
+                                                "properties": {
+                                                    "address": {
+                                                        "type": "string",
+                                                        "example": "Connerways Intern Lane Madge..."
+                                                    },
+                                                    "phone_number": {
+                                                        "type": "string",
+                                                        "example": "07541888560",
+                                                        "nullable": true
+                                                    },
+                                                    "preferred_location": {
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2023-01-01T10:00:00Z"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2023-01-01T10:00:00Z"
+                                                    },
+                                                    "active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "available_balance": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 100.5
+                                                    },
+                                                    "total_spend": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 500
+                                                    },
+                                                    "dob": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "example": "1990-05-15",
+                                                        "nullable": true
+                                                    },
+                                                    "gdpr_email_active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "gdpr_sms_active": {
+                                                        "type": "boolean",
+                                                        "example": false
+                                                    },
+                                                    "gender": {
+                                                        "type": "string",
+                                                        "example": "female",
+                                                        "nullable": true
+                                                    },
+                                                    "firstName": {
+                                                        "type": "string",
+                                                        "example": "Ruby",
+                                                        "nullable": true
+                                                    },
+                                                    "lastName": {
+                                                        "type": "string",
+                                                        "example": "White",
+                                                        "nullable": true
+                                                    },
+                                                    "post_code": {
+                                                        "type": "string",
+                                                        "example": "AB12 3CD",
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "total_used_minutes": {
+                                                "type": "integer",
+                                                "example": 0
+                                            },
+                                            "total_service_purchased_price": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0
+                                            },
+                                            "total_product_purchased_price": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0
+                                            },
+                                            "total_price": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred while fetching users"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/locations": {
             "get": {
                 "tags": [

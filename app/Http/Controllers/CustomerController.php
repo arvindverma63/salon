@@ -703,4 +703,173 @@ class CustomerController extends Controller
             return response()->json(['status' => false], 500);
         }
     }
+
+    /**
+     * @OA\Get(
+     *     path="/api/system-users",
+     *     summary="Get all System users with their usage and purchase details",
+     *     description="Retrieves a list of users with role 'customer', including their profile details, total used minutes, and total purchased service/product prices.",
+     *     operationId="getAllSystemUser",
+     *     tags={"Users"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="user",
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", example=2258),
+     *                     @OA\Property(property="name", type="string", example="Ruby White"),
+     *                     @OA\Property(property="email", type="string", example="ruby2pro@gmail.com"),
+     *                     @OA\Property(property="role", type="string", example="customer")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="profile",
+     *                     type="object",
+     *                     @OA\Property(property="address", type="string", example="Connerways Intern Lane Madge..."),
+     *                     @OA\Property(property="phone_number", type="string", example="07541888560", nullable=true),
+     *                     @OA\Property(property="preferred_location", type="integer", example=1, nullable=true),
+     *                     @OA\Property(property="created_at", type="string", format="date-time", example="2023-01-01T10:00:00Z"),
+     *                     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-01-01T10:00:00Z"),
+     *                     @OA\Property(property="active", type="boolean", example=true),
+     *                     @OA\Property(property="available_balance", type="number", format="float", example=100.50),
+     *                     @OA\Property(property="total_spend", type="number", format="float", example=500.00),
+     *                     @OA\Property(property="dob", type="string", format="date", example="1990-05-15", nullable=true),
+     *                     @OA\Property(property="gdpr_email_active", type="boolean", example=true),
+     *                     @OA\Property(property="gdpr_sms_active", type="boolean", example=false),
+     *                     @OA\Property(property="gender", type="string", example="female", nullable=true),
+     *                     @OA\Property(property="firstName", type="string", example="Ruby", nullable=true),
+     *                     @OA\Property(property="lastName", type="string", example="White", nullable=true),
+     *                     @OA\Property(property="post_code", type="string", example="AB12 3CD", nullable=true)
+     *                 ),
+     *                 @OA\Property(property="total_used_minutes", type="integer", example=0),
+     *                 @OA\Property(property="total_service_purchased_price", type="number", format="float", example=0.00),
+     *                 @OA\Property(property="total_product_purchased_price", type="number", format="float", example=0.00),
+     *                 @OA\Property(property="total_price", type="number", format="float", example=0.00)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="An error occurred while fetching users")
+     *         )
+     *     )
+     * )
+     */
+    public function getAllSystemUsers()
+    {
+        try {
+            $results = DB::table('users as u')
+                ->where('role', 'customer') // Fixed to match description
+                ->select(
+                    'u.id',
+                    'u.email',
+                    'u.role',
+                    'up.address',
+                    'up.phone_number',
+                    'up.preferred_location',
+                    'up.created_at',
+                    'up.updated_at',
+                    'up.active',
+                    'up.available_balance',
+                    'up.total_spend',
+                    'up.dob',
+                    'up.gdpr_email_active',
+                    'up.gdpr_sms_active',
+                    'up.gender',
+                    'up.firstName',
+                    'up.lastName',
+                    'up.post_code',
+                    DB::raw('COALESCE(SUM(CASE WHEN st.type = \'used\' THEN st.quantity ELSE 0 END), 0) as total_used_minutes'),
+                    DB::raw('COALESCE(SUM(CASE WHEN st.type = \'purchased\' THEN s.price ELSE 0 END), 0) as total_service_purchased_price'),
+                    DB::raw('COALESCE(SUM(pt.quantity * p.price), 0) as total_product_purchased_price')
+                )
+                ->leftJoin('user_profiles as up', 'up.user_id', '=', 'u.id')
+                ->leftJoin('service_transactions as st', 'st.user_id', '=', 'u.id')
+                ->leftJoin('services as s', function ($join) {
+                    $join->on('s.id', '=', 'st.service_id')
+                        ->where('st.type', '=', 'purchased');
+                })
+                ->leftJoin('product_transaction as pt', 'pt.user_id', '=', 'u.id')
+                ->leftJoin('products as p', 'p.id', '=', 'pt.product_id')
+                ->groupBy(
+                    'u.id',
+                    'u.email',
+                    'u.role',
+                    'up.address',
+                    'up.phone_number',
+                    'up.preferred_location',
+                    'up.created_at',
+                    'up.updated_at',
+                    'up.active',
+                    'up.available_balance',
+                    'up.total_spend',
+                    'up.dob',
+                    'up.gdpr_email_active',
+                    'up.gdpr_sms_active',
+                    'up.gender',
+                    'up.firstName',
+                    'up.lastName',
+                    'up.post_code'
+                )
+                ->orderBy('u.id')
+                ->get();
+
+            $usersWithProfiles = $results->map(function ($result) {
+                $user = [
+                    'id' => $result->id,
+                    'name' => trim("{$result->firstName} {$result->lastName}"), // Combine firstName and lastName
+                    'email' => $result->email,
+                    'role' => $result->role,
+                ];
+
+                $profile = [
+                    'address' => $result->address,
+                    'phone_number' => $result->phone_number,
+                    'preferred_location' => $result->preferred_location,
+                    'created_at' => $result->created_at,
+                    'updated_at' => $result->updated_at,
+                    'active' => $result->active,
+                    'available_balance' => $result->available_balance,
+                    'total_spend' => $result->total_spend,
+                    'dob' => $result->dob,
+                    'gdpr_email_active' => $result->gdpr_email_active,
+                    'gdpr_sms_active' => $result->gdpr_sms_active,
+                    'gender' => $result->gender,
+                    'firstName' => $result->firstName,
+                    'lastName' => $result->lastName,
+                    'post_code' => $result->post_code,
+                ];
+
+                $totalUsedMinutes = (int)$result->total_used_minutes;
+                $totalServicePurchasedPrice = (float)$result->total_service_purchased_price;
+                $totalProductPurchasedPrice = (float)$result->total_product_purchased_price;
+                $totalPrice = $totalServicePurchasedPrice + $totalProductPurchasedPrice;
+
+                return [
+                    'user' => $user,
+                    'profile' => $profile,
+                    'total_used_minutes' => $totalUsedMinutes,
+                    'total_service_purchased_price' => $totalServicePurchasedPrice,
+                    'total_product_purchased_price' => $totalProductPurchasedPrice,
+                    'total_price' => $totalPrice,
+                ];
+            })->all();
+
+            return $usersWithProfiles;
+        } catch (\Exception $e) {
+            Log::error('Error fetching users: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while fetching users'
+            ], 500);
+        }
+    }
 }
