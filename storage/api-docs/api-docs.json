@@ -613,6 +613,249 @@
                 }
             }
         },
+        "/api/customer/add": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Add a new customer",
+                "description": "Creates a new customer with user profile information",
+                "operationId": "customerAdd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "firstName": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "John",
+                                        "nullable": true
+                                    },
+                                    "lastName": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "Doe",
+                                        "nullable": true
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255,
+                                        "example": "john.doe@example.com",
+                                        "nullable": true
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 6,
+                                        "example": "password123",
+                                        "nullable": true
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "password123",
+                                        "nullable": true
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "admin",
+                                            "operator",
+                                            "customer"
+                                        ],
+                                        "example": "customer"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "maxLength": 15,
+                                        "example": "1234567890",
+                                        "nullable": true
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "123 Main St",
+                                        "nullable": true
+                                    },
+                                    "preferred_location": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
+                                    "referred_by": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "friend",
+                                        "nullable": true
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "example": "male",
+                                        "nullable": true
+                                    },
+                                    "post_code": {
+                                        "type": "string",
+                                        "maxLength": 10,
+                                        "example": "12345",
+                                        "nullable": true
+                                    },
+                                    "gdpr_sms_active": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    },
+                                    "gdpr_email_active": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    },
+                                    "dob": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Customer created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Registration successful"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "John Doe"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "john.doe@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "customer"
+                                                },
+                                                "verification_token": {
+                                                    "type": "string",
+                                                    "example": "random30charstring"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "user_profile": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "phone_number": {
+                                                    "type": "string",
+                                                    "example": "1234567890"
+                                                },
+                                                "address": {
+                                                    "type": "string",
+                                                    "example": "123 Main St"
+                                                },
+                                                "preferred_location": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "referred_by": {
+                                                    "type": "string",
+                                                    "example": "friend"
+                                                },
+                                                "gender": {
+                                                    "type": "string",
+                                                    "example": "male"
+                                                },
+                                                "post_code": {
+                                                    "type": "string",
+                                                    "example": "12345"
+                                                },
+                                                "firstName": {
+                                                    "type": "string",
+                                                    "example": "John"
+                                                },
+                                                "lastName": {
+                                                    "type": "string",
+                                                    "example": "Doe"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "john.doe@example.com"
+                                                },
+                                                "dob": {
+                                                    "type": "string",
+                                                    "example": "1990-01-01"
+                                                },
+                                                "gdpr_sms_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "gdpr_email_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errors": {
+                                            "type": "string",
+                                            "example": "The email field must be a valid email address."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errors": {
+                                            "type": "string",
+                                            "example": "Registration failed. Please try again later."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/customers": {
             "get": {
                 "tags": [
@@ -1425,6 +1668,215 @@
                                         "message": {
                                             "type": "string",
                                             "example": "An error occurred while fetching users"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/getUserById/{id}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get customer details by ID",
+                "description": "Retrieves detailed information for a specific customer including profile details, total used minutes, and total purchased service/product prices.",
+                "operationId": "getUserById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The ID of the user to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2258
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 2258
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "ruby2pro@gmail.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "customer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "profile": {
+                                            "properties": {
+                                                "address": {
+                                                    "type": "string",
+                                                    "example": "Connerways Intern Lane Madge..."
+                                                },
+                                                "phone_number": {
+                                                    "type": "string",
+                                                    "example": "07541888560",
+                                                    "nullable": true
+                                                },
+                                                "preferred_location": {
+                                                    "type": "integer",
+                                                    "example": 1,
+                                                    "nullable": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2023-01-01T10:00:00Z"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2023-01-01T10:00:00Z"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "available_balance": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 100.5
+                                                },
+                                                "total_spend": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 500
+                                                },
+                                                "dob": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "1990-05-15",
+                                                    "nullable": true
+                                                },
+                                                "gdpr_email_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "gdpr_sms_active": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "gender": {
+                                                    "type": "string",
+                                                    "example": "female",
+                                                    "nullable": true
+                                                },
+                                                "firstName": {
+                                                    "type": "string",
+                                                    "example": "Ruby",
+                                                    "nullable": true
+                                                },
+                                                "lastName": {
+                                                    "type": "string",
+                                                    "example": "White",
+                                                    "nullable": true
+                                                },
+                                                "post_code": {
+                                                    "type": "string",
+                                                    "example": "AB12 3CD",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "total_used_minutes": {
+                                            "type": "integer",
+                                            "example": 0
+                                        },
+                                        "total_service_purchased_price": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 0
+                                        },
+                                        "total_product_purchased_price": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 0
+                                        },
+                                        "total_price": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 0
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID provided",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid user ID"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Internal server error"
                                         }
                                     },
                                     "type": "object"

@@ -12,6 +12,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ServiceUsageController;
 use App\Http\Controllers\ServiceTransactionController;
 use App\Models\Location;
+use Tymon\JWTAuth\Claims\Custom;
 
 /**
  * @OA\Info(
@@ -58,7 +59,7 @@ Route::get('/customers/search', [CustomerController::class, 'searchCustomers']);
 Route::post('/customers/date-range', [CustomerController::class, 'customerDateRange']);
 Route::get('/users', [CustomerController::class, 'getAllUsers']);
 
-
+Route::get('/getUserById/{id}',[CustomerController::class,'getUserById']);
 
 Route::group(['middleware' => 'auth:api'], function () {
     Route::post('logout', [AuthController::class, 'logout']);

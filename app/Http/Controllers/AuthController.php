@@ -150,7 +150,7 @@ class AuthController extends Controller
             'id' => $user->id,
             'name' => $profile->firstName . " " . $profile->lastName,
             'preferred_location' => $location ? $location->name : null,
-            'location_id'=> $profile->preferred_location
+            'location_id' => $profile->preferred_location
         ]);
     }
 
@@ -681,6 +681,86 @@ class AuthController extends Controller
 
 
 
+    /**
+     * @OA\Post(
+     *     path="/api/customer/add",
+     *     summary="Add a new customer",
+     *     description="Creates a new customer with user profile information",
+     *     operationId="customerAdd",
+     *     tags={"Users"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="firstName", type="string", nullable=true, example="John", maxLength=255),
+     *             @OA\Property(property="lastName", type="string", nullable=true, example="Doe", maxLength=255),
+     *             @OA\Property(property="email", type="string", format="email", nullable=true, example="john.doe@example.com", maxLength=255),
+     *             @OA\Property(property="password", type="string", nullable=true, example="password123", minLength=6),
+     *             @OA\Property(property="password_confirmation", type="string", nullable=true, example="password123"),
+     *             @OA\Property(property="role", type="string", enum={"admin", "operator", "customer"}, example="customer"),
+     *             @OA\Property(property="phone_number", type="string", nullable=true, example="1234567890", maxLength=15),
+     *             @OA\Property(property="address", type="string", nullable=true, example="123 Main St", maxLength=255),
+     *             @OA\Property(property="preferred_location", type="integer", nullable=true, example=1),
+     *             @OA\Property(property="referred_by", type="string", nullable=true, example="friend", maxLength=255),
+     *             @OA\Property(property="gender", type="string", nullable=true, example="male"),
+     *             @OA\Property(property="post_code", type="string", nullable=true, example="12345", maxLength=10),
+     *             @OA\Property(property="gdpr_sms_active", type="boolean", nullable=true, example=true),
+     *             @OA\Property(property="gdpr_email_active", type="boolean", nullable=true, example=true),
+     *             @OA\Property(property="dob", type="string", format="date", nullable=true, example="1990-01-01")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Customer created successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Registration successful"),
+     *             @OA\Property(
+     *                 property="user",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="name", type="string", example="John Doe"),
+     *                 @OA\Property(property="email", type="string", example="john.doe@example.com"),
+     *                 @OA\Property(property="role", type="string", example="customer"),
+     *                 @OA\Property(property="verification_token", type="string", example="random30charstring")
+     *             ),
+     *             @OA\Property(
+     *                 property="user_profile",
+     *                 type="object",
+     *                 @OA\Property(property="user_id", type="integer", example=1),
+     *                 @OA\Property(property="phone_number", type="string", example="1234567890"),
+     *                 @OA\Property(property="address", type="string", example="123 Main St"),
+     *                 @OA\Property(property="preferred_location", type="integer", example=1),
+     *                 @OA\Property(property="referred_by", type="string", example="friend"),
+     *                 @OA\Property(property="gender", type="string", example="male"),
+     *                 @OA\Property(property="post_code", type="string", example="12345"),
+     *                 @OA\Property(property="firstName", type="string", example="John"),
+     *                 @OA\Property(property="lastName", type="string", example="Doe"),
+     *                 @OA\Property(property="email", type="string", example="john.doe@example.com"),
+     *                 @OA\Property(property="dob", type="string", example="1990-01-01"),
+     *                 @OA\Property(property="gdpr_sms_active", type="boolean", example=true),
+     *                 @OA\Property(property="gdpr_email_active", type="boolean", example=true)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="errors", type="string", example="The email field must be a valid email address.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="errors", type="string", example="Registration failed. Please try again later.")
+     *         )
+     *     )
+     * )
+     */
     public function customerAdd(Request $request)
     {
         // Validation logic
