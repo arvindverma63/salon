@@ -767,7 +767,7 @@ class CustomerController extends Controller
     {
         try {
             $results = DB::table('users as u')
-                ->where('role', 'customer') // Fixed to match description
+                ->whereNot('role', 'customer') // Fixed to match description
                 ->select(
                     'u.id',
                     'u.email',
