@@ -408,6 +408,8 @@ class CustomerController extends Controller
      *     )
      * )
      */
+
+
     public function customerDateRange(Request $request)
     {
         // Retrieve filter parameters
